@@ -3,5 +3,9 @@
     "python.linting.flake8Enabled": true,
     "python.linting.enabled": true,
     "deno.enable": false,
-    "jshint.options": {"esversion": 6},
+    "jshint.options": {
+        "esversion": 6
+    },
+    "python.linting.pylamaEnabled": false,
+    "python.pythonPath": "server/.env/bin/python2",
 }

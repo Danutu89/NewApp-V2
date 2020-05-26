@@ -120,14 +120,6 @@ function Edit_Post(){
     </div>
     
 {:else if page == "post"}
-<style>
-content .sidebar#sidebar-right{
-    position: -webkit-sticky;
-    position: sticky;
-    top: 3.5rem;
-    align-self: flex-start;
-  }
-</style>
     {#if $session.auth && $session.permissions.edit_post_permission }
         <div class="widget">
         <div class="widget-header">

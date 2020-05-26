@@ -98,6 +98,7 @@ body {
 	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 	background-color: var(--body-bg);
 	overscroll-behavior: none;
+	touch-action: manipulation;
 }
 
 img {
@@ -284,6 +285,8 @@ pre.ql-syntax {
 content direct {
 	display: flex;
 	width: 100%;
+	height: calc(100vh - 4rem);
+	transition: transform 400ms cubic-bezier(0,0,1,1);
 }
 
 content direct .conversations {
@@ -298,12 +301,19 @@ content direct .conversations {
 
 content direct .conversations .header {
 	padding: 0.5rem;
-	border-bottom: var(--border);
+	display: flex;
+    background-color: var(--secondary-background);
+    border-top-left-radius: var(--border-radius);
+    border-top-right-radius: var(--border-radius);
 }
 
 content direct .conversations .header span {
 	display: block;
 	color: var(--color);
+}
+
+content direct .conversations .users {
+	padding: 0.5rem 0rem;
 }
 
 content direct .conversations .users .user-conv {
@@ -333,6 +343,8 @@ content direct .conversations .users .user-conv .conv-info span {
 }
 
 content direct .conversation {
+	display: flex;
+	flex-direction: column;
 	width: calc(100% - 350px);
 	height: 100%;
 	margin-left: auto;
@@ -341,6 +353,37 @@ content direct .conversation {
 	border-radius: 20px;
 	box-shadow: 5px 5px 11px 0px rgba(0, 0, 0, 0.2);
 	border: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+content direct .conversation .header {
+	width: 100%;
+    display: flex;
+    background-color: var(--secondary-background);
+    border-top-left-radius: var(--border-radius);
+    border-top-right-radius: var(--border-radius);
+}
+
+content direct .conversation .header .user {
+	display: flex;
+    padding: 0.2rem;
+}
+
+content direct .conversation .header .user .img {
+	height: 40px;
+    margin: 0.2rem 0.5rem;
+}
+
+content direct .conversation .header .user .img img {
+	border-radius: 40px;
+}
+
+content direct .conversation .header .user .info {
+	display: flex;
+    flex-direction: column;
+    line-height: 1.1;
+    color: var(--color);
+    height: 40px;
+    justify-content: center;
 }
 
 content direct .conversation .chat {
@@ -355,12 +398,16 @@ content direct .conversation .chat .not-mine-message {
 	display: flex;
 }
 
+content direct .conversation .chat .not-mine-message .user-img {
+	height: 40px;
+}
+
 content direct .conversation .chat .not-mine-message .user-img img {
 	border-radius: 30px;
 }
 
 content direct .conversation .chat .not-mine-message .user-msg {
-	background-color: var(--body-bg);
+	background-color: var(--secondary-background);
 	border-radius: 20px;
 	line-height: 1.4;
 	padding: 0.2rem 0.4rem;
@@ -368,6 +415,11 @@ content direct .conversation .chat .not-mine-message .user-msg {
 	height: auto;
 	display: block;
 	color: var(--color);
+}
+
+content direct .conversation .chat .not-mine-message .user-msg span,
+content direct .conversation .chat .mine-message .user-msg span {
+	vertical-align: sub;
 }
 
 content direct .conversation .chat .mine-message {
@@ -378,6 +430,7 @@ content direct .conversation .chat .mine-message {
 
 content direct .conversation .chat .mine-message .user-img {
 	margin-right: 0.5rem;
+	height: 40px;
 }
 
 content direct .conversation .chat .mine-message .user-img img {
@@ -385,7 +438,7 @@ content direct .conversation .chat .mine-message .user-img img {
 }
 
 content direct .conversation .chat .mine-message .user-msg {
-	background-color: var(--body-bg);
+	background-color: var(--secondary-background);
 	border-radius: 20px;
 	line-height: 1.4;
 	padding: 0.2rem 0.4rem;
@@ -398,6 +451,33 @@ content direct .conversation .chat .mine-message .user-msg {
 content direct .conversation .message {
 	display: flex;
 	padding: 0.5rem;
+	width: calc(100% - 1rem);
+}
+
+content direct .conversation .message textarea {
+	vertical-align: baseline;
+	vertical-align: -webkit-baseline-middle;
+	border: none;
+	background-color: transparent;
+	color: var(--navbar-color);
+	width: 100%;
+	resize: none;
+	height: 14px;
+    font-size: 14px;
+    width: 100%;
+}
+
+content direct .conversation .message .textarea {
+	border-radius: 20px;
+    width: calc(100% - 0.8rem);
+    padding: 0.4rem;
+    font-size: 14px;
+    background-color: var(--secondary-background);
+
+}
+
+content direct .conversation .message textarea:focus {
+	outline: none;
 }
 
 content direct .conversation .message button {
@@ -410,6 +490,38 @@ content direct .conversation .message button {
 	font-weight: 600;
 	padding: 0.2rem 0.5rem 0.2rem 0.5rem;
 	box-shadow: 2px 2px;
+	width: 6rem;
+}
+
+content direct .conversation .message button:focus {
+	outline: none;
+}
+
+@media screen and ( max-width: 940px ){
+	content direct {
+		height: calc(100vh - 4.5rem);
+	}
+
+	content direct .conversation {
+		width: calc(100% - 320px);
+	}
+}
+
+@media screen and ( max-width: 800px ){
+	content direct {
+		position: absolute;
+    	width: calc(200vw - 1rem);
+	}
+
+	content direct .conversations {
+		width: 100vw;
+		margin-left: 0.2rem;
+	}
+
+	content direct .conversation {
+		width: 100vw;
+		margin-left: 1.2rem;
+	}
 }
 
 content privacy,
@@ -930,10 +1042,11 @@ hr {
 content {
 	margin: auto;
 	position: relative;
-	min-height: 440px;
+	min-height: calc(100vh - 4rem);
 	max-width: 1250px;
 	display: flex;
 	padding: 0.4rem;
+	overflow: hidden;
 }
 
 content .sidebar {
@@ -953,9 +1066,6 @@ content sidebar form {
 }
 
 content .sidebar#sidebar-left {
-	position: -webkit-sticky;
-	position: sticky;
-	top: 3.5rem;
 	align-self: flex-start;
 }
 
@@ -1214,6 +1324,10 @@ tag {
 	.user-posts .articles .artcile {
 		max-width: none;
 	}
+
+	content .sidebar#sidebar-right{
+		margin-left: 0.5rem;
+	}
 }
 
 @media screen and (min-width: 1000px) {
@@ -1254,7 +1368,7 @@ tag {
 
 @media (min-width: 950px) and (max-width: 1260px) {
 	content .sidebar {
-		margin-right: 1.5rem;
+		margin-right: 1rem;
 	}
 }
 
@@ -1701,6 +1815,10 @@ content .articles .navigation-menu a button:focus {
 @media screen and (max-width: 940px) {	
 	content .articles .navigation-menu {
 		display: flex;
+	}
+
+	content {
+		min-height: calc(100vh - 4.5rem);
 	}
 
 	.newapp-navbar {

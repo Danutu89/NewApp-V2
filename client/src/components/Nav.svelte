@@ -14,6 +14,8 @@ const cookies = Cookie();
 const { session, page } = stores();
 var jwt_decode = require('jwt-decode');
 
+let notificationListener;
+
 let l_modal, r_modal, j_modal,l_modal_in, r_modal_in, j_modal_in, user = null, user_center = null, user_image = null, overflow = null, search = "";
 var menu_open = false;
 let notifications,notifications_c,notifications_center_c,notification_list;
@@ -30,6 +32,10 @@ $: if(admin){
   navbar_class="navbar-items";
 }
 
+socket.on("notification", ()=> {
+  fetchNotifications();
+});
+
 function LogOut(){
   if($session.auth == true){
       /*socketio.emit('logout', {
@@ -42,14 +48,23 @@ function LogOut(){
 }
 
 function onClickDocument(e){
-  if(!user || !user_center || !user_image || !overflow || !notification_list || !notifications || !notifications_c || !notifications_center_c)
+  if(!user || !user_center || !user_image || !overflow)
+    return;
+  
+  if((!notification_list || !notifications || !notifications_c || !notifications_center_c) && isMobile == false)
     return;
 
   if($session.auth){
     if(!user_image.contains(e.target) && !user_center.contains(e.target)){
-      if(notifications_c.contains(e.target)){
-        user.style["display"] = "none";
-      }else if(user.style["display"] == "block"){
+
+      if(isMobile == false){
+        if(notifications_c.contains(e.target)){
+          user.style["display"] = "none";
+        }else if(user.style["display"] == "block"){
+          user.style["display"] = "none";
+          overflow.classList.remove("show");
+        }
+      }else{
         user.style["display"] = "none";
         overflow.classList.remove("show");
       }
@@ -78,10 +93,6 @@ function onClickDocument(e){
           notifications_center_c.style['display'] = 'none';
           overflow.classList.remove("show");
         }
-      }
-    }else{
-      if(notifications_c.contains(e.target)){
-        goto("/notifications");
       }
     }
   }else{
@@ -150,12 +161,6 @@ onMount(async function(){
   }else{
     p_image = "30px";
     l_image = "25";
-  }
-
-  if($session.auth){
-    socket.on("notification-"+$session.id, ()=> {
-      fetchNotifications();
-    });
   }
 });
 
@@ -247,7 +252,8 @@ function goHome(){
     </div>
   </div>
   <div style="margin-inline-start: auto;display:flex;">
-    {#if $session.auth == true}
+  {#if $session.auth == true}
+    {#if isMobile == false}
      <div bind:this={notifications_c} class="navbar-item">
        <div class="newapp-dropdown" id="notification-center" style="cursor: pointer;">
          <i class="na-bell"></i>
@@ -285,10 +291,15 @@ function goHome(){
           </div>
           </div>
           {/if}
+        
       </div>
     </div>
      <div class="navbar-item">
           <a href="/newpost" rel="prefetch"><i class="na-plus-circle" style="color:var(--navbar-color);display:block;margin-top: calc((30px - 19px )/2);"></i></a>
+      </div>
+      {/if}
+      <div class="navbar-item">
+          <a href="/direct" rel="prefetch"><i class="na-comment" style="color:var(--navbar-color);display:block;margin-top: calc((30px - 19px )/2);"></i></a>
       </div>
      <div class="navbar-item" style="cursor: pointer;" id="navbar_profile_image">
             <div bind:this={user_center} class="newapp-dropdown" id="user-center">
@@ -310,10 +321,26 @@ function goHome(){
                   <i class="na-chevron-right"></i>
                 </div>
                 </a>
+                {#if isMobile == true}
+                <a href="/notifications" style="color: var(--navbar-color);">
+                <div class="dropdown-item" on:click={CloseMenu}>
+                  <i class="na-bell"></i> 
+                  <span>Notifications</span>
+                  <i class="na-chevron-right"></i>
+                </div>
+                </a>
+                <a href="/newpost" style="color: var(--navbar-color);">
+                <div class="dropdown-item" on:click={CloseMenu}>
+                  <i class="na-plus-circle"></i> 
+                  <span>New Post</span>
+                  <i class="na-chevron-right"></i>
+                </div>
+                </a>
+                {/if}
                 <a rel="preload" href="/user/settings" style="color: var(--navbar-color);">
                 <div class="dropdown-item" on:click={CloseMenu}>
                   <i class="na-user-cog"></i>
-                  <span>Setting</span>
+                  <span>Settings</span>
                   <i class="na-chevron-right"></i>
                 </div>
                 </a>

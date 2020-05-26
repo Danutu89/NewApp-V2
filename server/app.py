@@ -16,7 +16,7 @@ from elasticsearch import Elasticsearch
 from flask_compress import Compress
 from werkzeug.wrappers import BaseRequest
 from werkzeug.exceptions import HTTPException, NotFound
-from flask_socketio import SocketIO
+from flask_socketio import SocketIO, join_room, leave_room
 from flask_jwt_extended import JWTManager
 from geopy.geocoders import Nominatim
 import flask_whooshalchemy as wa
@@ -78,7 +78,6 @@ bcrypt = Bcrypt(app)
 socket = SocketIO(app, manage_session=False, cors_allowed_origins='*')
 geolocator = Nominatim(user_agent="NewApp")
 
-
 translate = FullClient("7eaa96e0-be79-11e9-8f72-af685da1b20e", apiServer="http://api.cortical.io/rest",
                        retinaName="en_associative")
 
@@ -98,11 +97,11 @@ def access(token):
     except:
         return make_response(jsonify({'operation': 'failed'}), 401)
 
+    join_room('notification-{}'.format(user_t['id']))
     user = UserModel.query.filter_by(id=user_t['id']).first()
     user.status = 'Online'
     user.status_color = '#00c413'
     db.session.commit()
-
 
 @socket.on('logout')
 def logout(token):
@@ -115,11 +114,26 @@ def logout(token):
     except:
         return make_response(jsonify({'operation': 'failed'}), 401)
 
+    leave_room('notification-{}'.format(user_t['id']))
     user = UserModel.query.filter_by(id=user_t['id']).first()
     user.status = 'Offline'
     user.status_color = '#cc1616'
     db.session.commit()
 
+@socket.on('join')
+def join(data):
+    join_room(data['room'])
+    socket.send("joined", room=data['room'])
+
+@socket.on('send_message')
+def message(data):
+    message = {
+        'text': data['text'],
+        'author': data['author'],
+        'room': data['room'],
+        'created_on': str(time.datetime.now())
+    }
+    socket.emit("get_message", message, room=data['room'])
 
 @socket.on('connect')
 def on_connect():
@@ -133,7 +147,7 @@ def on_disconnect():
 
 @app.errorhandler(404)
 def server_error(error):
-    return make_response(jsonify({'error': 404}),404)
+    return make_response(jsonify({'error': 404}), 404)
 
 @app.errorhandler(400)
 def server_error(error):

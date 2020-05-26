@@ -34,11 +34,11 @@ function getTranslate3d (el) {
 
 function swipeStart(e){
     if(typeof(e.targetTouches[0]) == "undefined"){
-        touchStart = {x: e.screenX, y: e.screenY};
+        touchStart = {x: e.clientX, y: e.clientY};
         touchPosStart = {x: e.clientX, y: e.clientY};
     }
     else{
-        touchStart = {x: e.targetTouches[0].screenX, y: e.targetTouches[0].screenY};
+        touchStart = {x: e.targetTouches[0].clientX, y: e.targetTouches[0].clientY};
         touchPosStart = {x: e.targetTouches[0].clientX, y: e.targetTouches[0].clientY};
     }
     touchStartFixed = touchStart;
@@ -57,9 +57,9 @@ function swipeStart(e){
 
 function swipeMove(e){
     if(typeof(e.targetTouches[0]) == "undefined")
-        touchCurrent = {x: e.screenX, y: e.screenY};
+        touchCurrent = {x: e.clientX, y: e.clientY};
     else
-        touchCurrent = {x: e.targetTouches[0].screenX, y: e.targetTouches[0].screenY};
+        touchCurrent = {x: e.targetTouches[0].clientX, y: e.targetTouches[0].clientY};
 
     change = {x: (touchStart.x - touchCurrent.x)*-1, y: (touchStart.y - touchCurrent.y)*-1};
     changeFixed = {x: (touchStartFixed.x - touchCurrent.x)*-1, y: (touchStartFixed.y - touchCurrent.y)*-1};
@@ -86,7 +86,7 @@ function swipeMove(e){
         }
     }else{
         swipeDir = "none";
-        return;
+        
     }
 
     if(touchLive[touchLive.length - 1].swipeDir != swipeDir || touchLive[touchLive.length - 1].swipeDir == "none"){
@@ -113,15 +113,17 @@ function swipeMove(e){
     }else{
         elementSwiped = "none";
     }
+    
     //console.log(touchStart);
     //console.log(swipeDir, touchLive);
+    
 }
 
 async function swipeEnd(e){
     if(typeof(e.targetTouches[0]) == "undefined")
-        touchEnd = {x: e.changedTouches[0].screenX, y: e.changedTouches[0].screenY};
+        touchEnd = {x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY};
     else
-        touchEnd = {x: e.targetTouches[0].screenX, y: e.targetTouches[0].screenY};
+        touchEnd = {x: e.targetTouches[0].clientX, y: e.targetTouches[0].clientY};
 
     var isTouch = Math.abs(touchEnd.y - touchStart.y) < touchThreshold && Math.abs(touchEnd.x - touchStart.x) < touchThreshold ? true : false;
 
@@ -149,10 +151,10 @@ async function swipeEnd(e){
     if(elementOpened != "wrapper")
         document.body.style.overflow = 'visible';
 
-    if(reload != null && !isTouch && (elementSwiped == "reload" || elementOpened == "reload")){
+    if(reload != null && !isTouch){
         reload.style.transition = "";
 
-        if(change.y > 100){
+        if(changeFixed.y > 100){
             reload.style["min-height"] = 'calc('+reloadHeight+'px + 60px)';
             reload.style.transform = 'translate3d(0px, 60px, 0px)';
             reload.children[0].style["-webkit-animation"] = "load8 1.1s infinite linear";
@@ -195,17 +197,18 @@ function dragWrapper(e){
 
 function dragReload(e){
     var reloadHeightD = parseFloat((getComputedStyle(reload).minHeight).replace(/[^\d.]/g, ''));
-    var rotation = change.y+10 < 360 ? (change.y+10) * 30/10 : 30;
-    var height = reloadHeight + change.y + 30;
+    var rotation = changeFixed.y+10 < 360 ? (changeFixed.y+10) * 30/10 : 30;
+    var height = reloadHeight + changeFixed.y + 30;
     var spinnerHeight, containerHeight = 0;
-    var multiplier = 0.1;
+    var posY = changeFixed.y;
 
     if(swipeDir == "down"){
-        containerHeight = reloadHeight + change.y + 30;
-        spinnerHeight = change.y + 30;
+        containerHeight = reloadHeight + posY + 30;
+        spinnerHeight = changeFixed.y;
     }else{
-        containerHeight = reloadHeightD + change.y*multiplier;
-        spinnerHeight = 100 + change.y;
+        posY -= Math.abs(change.y);
+        containerHeight = reloadHeight + posY;
+        spinnerHeight = changeFixed.y;
     }
 
 	if(document.body.scrollTop == 0 && window.scrollY == 0){
@@ -214,19 +217,29 @@ function dragReload(e){
         reload.children[0].style.display = 'block';
         elementOpened = "reload";
 
-		if(change.y < 70 ){
+		if(changeFixed.y < 70 ){
             reload.style.transform = 'translate3d(0px, '+spinnerHeight+'px, 0px)';
-		}
-		if(change.y < 100 || change.y < -30){
-            reload.style["min-height"] = containerHeight+'px';
-		}
-		if(change.y < 360){
+		}  
+		if(changeFixed.y < 360){
 			reload.children[0].style.transform = 'rotate('+rotation+'deg)';
         }
-        
+        if(changeFixed.y < 100){
+            reload.style.transition = "none";
+            posY = changeFixed.y;
+		}else if(changeFixed.y > 100){
+            reload.style.transition = "";
+            if(swipeDir == "down")
+                posY = 100;
+            reload.style.transform = 'translate3d(0px, '+70+'px, 0px)';
+        }else if(changeFixed.y < 0 ){
+            reload.style.transition = "";
+            if(swipeDir == "up")
+                posY = 0;
+            reload.style.transform = 'translate3d(0px, '+0+'px, 0px)';
+        }
+        reload.style["min-height"] = (reloadHeight+posY)+'px';
     }
-    console.log(change);
-    
+    console.log(posY, change.y);
 }
 
 async function resetLoader(){

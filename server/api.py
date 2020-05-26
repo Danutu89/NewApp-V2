@@ -5,13 +5,12 @@ import httpagentparser
 from flask import Blueprint, make_response, jsonify, request, url_for, render_template
 
 from models import PostModel, TagModel, LikeModel, ReplyModel, Analyze_Pages, UserModel, Ip_Coordinates, bcrypt, \
-    Notifications_Model, Subscriber, Analyze_Session, ReplyOfReply
+    Notifications_Model, Subscriber, Analyze_Session, ReplyOfReply, ConversationModel, ConversationsModel
 
 import datetime as dt
 from analyze import parseVisitator, sessionID, GetSessionId, getAnalyticsData
 from sqlalchemy import desc, func, or_
 from sqlalchemy.schema import Sequence
-import socket
 import smtplib
 import dns.resolver
 import urllib
@@ -420,13 +419,11 @@ def home_page(page):
             user_id = request.args.get("user")
             posts = PostModel.query.filter_by(user=user_id).order_by(desc(PostModel.posted_on)).paginate(page=page, per_page=5)
     elif search:
-        results, total = PostModel.search_post(request.args.get('search'), 1, 9, 'en')
         if token:
-            posts = PostModel.query.filter_by(approved=True).filter(
-                or_(PostModel.lang.like(user_info.lang), PostModel.lang.like('en'))).filter(
-                PostModel.id.in_(results)).order_by(desc(PostModel.posted_on)).paginate(page=page, per_page=9)
+            posts = PostModel.whoosh_search(request.args.get('search')).filter_by(approved=True).filter(
+                or_(PostModel.lang.like(user_info.lang), PostModel.lang.like('en'))).order_by(desc(PostModel.posted_on)).paginate(page=page, per_page=9)
         else:
-            posts = PostModel.query.filter_by(approved=True).filter(PostModel.id.in_(results)).order_by(
+            posts = PostModel.whoosh_search(request.args.get('search')).filter_by(approved=True).order_by(
                 desc(PostModel.posted_on)).paginate(page=page, per_page=9)
     else:
         if token:
@@ -464,8 +461,6 @@ def home_page(page):
     home_json = {}
     posts_list = []
     posts_json = {}
-
-    print(mode)
 
     for post in posts.items:
         posts_json['title'] = post.title
@@ -1084,7 +1079,7 @@ def like_post(id):
         not_check = Notifications_Model.query.filter_by(
             title='{} liked your post'.format(user.name)).filter_by(body=post.title).first()
 
-    socket.emit("notification-{}".format(post.user_in.id))
+    socket.emit("notification", room="notification-{}".format(post.user_in.id))
 
     if not_check is not None:
         not_check.checked = False
@@ -1137,7 +1132,7 @@ def follow_user(id):
                 'icon': user.avatar,
                 'id': not_id
             })
-            socket.emit("notification-{}".format(id))
+            socket.emit("notification", room="notification-{}".format(id))
         else:
             follow.append(id)
             user_followed.append(user.id)
@@ -1159,7 +1154,7 @@ def follow_user(id):
                 'icon': user.avatar,
                 'id': not_id
             })
-            socket.emit("notification-{}".format(id))
+            socket.emit("notification", room="notification-{}".format(id))
     else:
         follow.append(id)
         user_followed.append(user.id)
@@ -1181,7 +1176,7 @@ def follow_user(id):
             'icon': user.avatar,
             'id': not_id
         })
-        socket.emit("notification-{}".format(id))
+        socket.emit("notification", room="notification-{}".format(id))
 
     db.session.add(notify)
     user.follow = follow
@@ -1270,7 +1265,7 @@ def newreply():
         'icon': decoded['avatar'],
         'id': not_id
     })
-    socket.emit("notification-{}".format(post.user_in.id))
+    socket.emit("notification", room="notification-{}".format(post.user_in.id))
     mentions = re.findall("@([a-zA-Z0-9]{1,15})", cleanhtml(data['content']))
     mentioned = UserModel.query.filter(UserModel.name.in_(mentions)).all()
     for m in mentioned:
@@ -1296,7 +1291,7 @@ def newreply():
             'icon': decoded['avatar'],
             'id': not_id
         })
-        socket.emit("notification-{}".format(m.id))
+        socket.emit("notification", room="notification-{}".format(m.id))
 
     return make_response(jsonify({'operation': 'success', 'reply_id': index}), 200)
 
@@ -1654,6 +1649,139 @@ def check_not():
 
     return make_response(jsonify({'operation': 'success'}), 200)
 
+
+@api.route("/direct", methods=['GET', 'POST'])
+def conversations():
+    token = request.headers['Token']
+
+    if not token:
+        return make_response(jsonify({'operation': 'failed'}), 401)
+
+    try:
+        user_t = jwt.decode(token, key_c)
+    except:
+        return make_response(jsonify({'operation': 'failed'}), 401)
+
+    user = UserModel.query.filter_by(id=user_t['id']).first()
+
+    if request.method == 'GET':
+
+        conv = ConversationModel.query.filter(ConversationModel.members.contains([user.id])).all()
+
+        conv_json = {'conversations': []}
+
+        for c in conv:
+
+            members = [x for i,x in enumerate(c.members) if x!=user.id]
+            users = UserModel.query.filter(UserModel.id.in_(members)).all()
+            members_json = []
+            last_text = ""
+
+            for m in users:
+                members_json.append({
+                    'name': m.name,
+                    'real_name': m.real_name,
+                    'avatar': m.avatar,
+                })
+
+            if c.last_message is not None:
+                last_text = c.last_message.message
+
+            conv_json['conversations'].append({
+                'room': 'direct-'+str(c.id),
+                'id': c.id,
+                'members': members_json,
+                'last_message': {
+                    'on': c.last_message_on,
+                    'text': last_text,
+                    'seen': c.seen
+                }
+            })
+
+        return make_response(jsonify(conv_json), 200)
+
+    if request.method == 'POST':
+        
+        data = request.json
+
+        if not data:
+            return make_response(jsonify({'operation': 'error', 'error': 'Missing data'}), 401)
+
+
+        users = UserModel.query.with_entities(UserModel.id).filter(UserModel.name.in_(data['users'])).all()
+        users = list(sum(users, ())) 
+        users.append(user_t['id'])
+
+        new_conv = ConversationModel(
+            id = None,
+            members = users,
+            seen = True,
+            last_message_on = None,
+            last_message_id = None
+        )
+
+        db.session.add(new_conv)
+        db.session.commit()
+
+        return make_response(jsonify({'operation': 'success'}), 200)
+
+@api.route('/direct/mess/<int:id>', methods=['POST', 'GET'])
+def messages(id):
+    token = request.headers['Token']
+
+    if not token:
+        return make_response(jsonify({'operation': 'failed'}), 401)
+
+    try:
+        user_t = jwt.decode(token, key_c)
+    except:
+        return make_response(jsonify({'operation': 'failed'}), 401)
+
+    user = UserModel.query.filter_by(id=user_t['id']).first()
+
+    if request.method == 'GET':
+        messages = ConversationsModel.query.filter_by(conversation_id=id).order_by(desc(ConversationsModel.id)).all()
+
+        messages_json = []
+
+        for m in messages:
+            if m.author.id == user_t['id']:
+                mine = True
+            else:
+                mine = False
+            messages_json.append({
+                'text': m.message,
+                'on': m.created_on,
+                'author': {
+                    'name': m.author.name,
+                    'realname': m.author.real_name,
+                    'avatar': m.author.avatar
+                },
+                'mine': mine
+            })
+
+        return make_response(jsonify(messages_json), 200)
+    
+    if request.method == 'POST':
+        data = request.json
+
+        if not data:
+            return make_response(jsonify({'operation': 'error', 'error': 'Missing data'}), 401)
+
+        
+        new_message = ConversationsModel(
+            id = None,
+            message = data['text'],
+            user = user_t['id'],
+            created_on = None,
+            conversation_id = id
+        )
+
+        db.session.add(new_message)
+        db.session.commit()
+
+        return make_response(jsonify({'operation': 'success'}), 200)
+        
 
 @api.route("/save-subscription", methods=['POST'])
 def sub():

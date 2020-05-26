@@ -108,8 +108,8 @@ onMount(async function() {
 				data: $session.token
 			});												
 		});
-		socket.on('logout', function () {
-			socket.emit('exit', {
+		socket.on('disconnect', function () {
+			socket.emit('logout', {
 				data: $session.token
 			});												
 		});

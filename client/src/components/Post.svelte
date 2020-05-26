@@ -58,14 +58,14 @@ var loadCss = function(cssPath){
 function likePostAnim(){
     if(like_button.classList.contains("na-heart1")){
         var likes = parseInt(like_counter.innerHTML);
-        var total = likes - 1;
+        var total = likes + 1;
         like_counter.innerHTML = total;
         like_button.classList.remove('na-heart1');
         like_button.classList.add('na-heart');
         like_button.classList.add('heartscale');
     }else if(like_button.classList.contains("na-heart")){
         var likes = parseInt(like_counter.innerHTML);
-        var total = likes + 1;
+        var total = likes - 1;
         like_counter.innerHTML = total;
         like_button.classList.remove('na-heart');
         like_button.classList.add('na-heart1');

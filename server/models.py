@@ -9,8 +9,6 @@ import sqlalchemy.dialects.postgresql as sq
 from app import bcrypt, db, db_engine
 
 
-from search_engine import SearchableMixin
-
 from flask import url_for, json
 import pytz
 
@@ -23,7 +21,7 @@ class UserModel(db.Model):
 
     id = db.Column(db.Integer, db.Sequence(
         'user_id_seq'), primary_key=True, index=True)
-    join_date = db.Column(db.Date, primary_key=False,
+    join_date = db.Column(db.DateTime, primary_key=False,
                           default=datetime.datetime.now)
     name = db.Column(db.String(50), primary_key=False)
     real_name = db.Column(db.String(50), primary_key=False)
@@ -43,7 +41,7 @@ class UserModel(db.Model):
     country_flag = db.Column(db.String, primary_key=False)
     lang = db.Column(db.String, primary_key=False, default='eng')
     int_tags = db.Column(sq.ARRAY(db.String), default=[], primary_key=False)
-    birthday = db.Column(db.Date, primary_key=False)
+    birthday = db.Column(db.DateTime, primary_key=False)
     profession = db.Column(db.String, primary_key=False)
     saved_posts = db.Column(sq.ARRAY(db.Integer),
                             default=[], primary_key=False)
@@ -201,11 +199,11 @@ class PostModel(db.Model):
     views = db.Column(db.Integer, primary_key=False, default=0)
     reply = db.Column(db.Integer, primary_key=False, default=0)
     user = db.Column(db.Integer, ForeignKey('users.id'))
-    posted_on = db.Column(db.Date, primary_key=False,
+    posted_on = db.Column(db.DateTime, primary_key=False,
                           default=datetime.datetime.now)
     approved = db.Column(db.Boolean, primary_key=False)
     closed = db.Column(db.Boolean, primary_key=False)
-    closed_on = db.Column(db.Date, primary_key=False)
+    closed_on = db.Column(db.DateTime, primary_key=False)
     closed_by = db.Column(db.Integer, primary_key=False)
     lang = db.Column(db.String, primary_key=False, default='eng')
     thumbnail = db.Column(db.String, primary_key=False)
@@ -266,7 +264,7 @@ class ReplyModel(db.Model):
     text = db.Column(db.String, primary_key=False)
     post_id = db.Column(db.Integer,  ForeignKey('posts.id'))
     user = db.Column(db.Integer, ForeignKey('users.id'))
-    posted_on = db.Column(db.Date, primary_key=False,
+    posted_on = db.Column(db.DateTime, primary_key=False,
                           default=datetime.datetime.now)
 
     post = db.relationship('PostModel', backref='replyes', foreign_keys=[post_id])
@@ -290,7 +288,7 @@ class ReplyOfReply(db.Model):
     text = db.Column(db.String, primary_key=False)
     reply_id = db.Column(db.Integer, ForeignKey('replyes.id'))
     user = db.Column(db.Integer, ForeignKey('users.id'))
-    posted_on = db.Column(db.Date, primary_key=False,
+    posted_on = db.Column(db.DateTime, primary_key=False,
                           default=datetime.datetime.now)
 
     reply = db.relationship('ReplyModel', backref='replies', foreign_keys=[reply_id])
@@ -334,7 +332,7 @@ class Analyze_Session(db.Model):
     os = db.Column(db.String, primary_key=False, default="Unknown")
     browser = db.Column(db.String, primary_key=False)
     session = db.Column(db.String, primary_key=False)
-    created_at = db.Column(db.Date, primary_key=False)
+    created_at = db.Column(db.DateTime, primary_key=False)
     bot = db.Column(db.Boolean, primary_key=False, default=False)
     lang = db.Column(db.String, primary_key=False, default='eng')
     referer = db.Column(db.String, primary_key=False)
@@ -363,7 +361,7 @@ class Analyze_Pages(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String, primary_key=False)
     session = db.Column(db.String, primary_key=False)
-    first_visited = db.Column(db.Date, primary_key=False)
+    first_visited = db.Column(db.DateTime, primary_key=False)
     visits = db.Column(db.Integer, default=1)
 
     def __init__(self, id, name, session, first_visited, visits):
@@ -484,7 +482,7 @@ class Notifications_Model(db.Model):
     link = db.Column(db.String, primary_key=False)
     for_user = db.Column(db.Integer, ForeignKey('users.id'))
     checked = db.Column(db.Boolean, primary_key=False, default=False)
-    created_on = db.Column(db.Date, primary_key=False,
+    created_on = db.Column(db.DateTime, primary_key=False,
                            default=datetime.datetime.now)
     category = db.Column(db.String, primary_key=False)
     receiver = db.relationship(
@@ -547,7 +545,7 @@ class PodcastsModel(db.Model):
     series_id = db.Column(db.Integer, ForeignKey('podcast_series.id'))
     series = db.relationship(
         "Podcast_SeriesModel", backref="podcasts_series", foreign_keys=[series_id])
-    posted_on = db.Column(db.Date, primary_key=False,
+    posted_on = db.Column(db.DateTime, primary_key=False,
                           default=datetime.datetime.utcnow)
     source = db.Column(db.String(), primary_key=False)
 
@@ -657,18 +655,43 @@ class Coordinates_Location(db.Model):
         self.city = city
         self.iso_code = iso_code
 
-# class Private_ConversationsModel:
+class ConversationModel(db.Model):
 
-#     __tablename__ = 'private_conversations'
+    __tablename__ = 'conversation'
 
-#     id = db.Column(db.Integer, db.Sequence('private_conversations_id_seq'), primary_key=True)
-#     members = db.Column(sq.ARRAY(db.Integer), default=[], primary_key = False)
-#     seen = db.Column(db.Boolean, primary_key = False)
+    def __init__(self, id, members, seen, last_message_on, last_message_id):
+        self.id = id
+        self.members = members
+        self.seen = seen
+        self.last_message_on = last_message_on
+        self.last_message_id = last_message_id
 
-# class Private_ConversationModel:
+    id = db.Column(db.Integer, db.Sequence('conversation_id_seq'), primary_key=True)
+    members = db.Column(sq.ARRAY(db.Integer), default=[], primary_key = False)
+    seen = db.Column(db.Boolean, primary_key=False)
+    last_message_on = db.Column(db.DateTime, primary_key=False, default=datetime.datetime.now)
+    last_message_id =  db.Column(db.Integer, ForeignKey("conversations.id"))
+    last_message = db.relationship("ConversationsModel", foreign_keys=[last_message_id], order_by=id.desc())
 
-#     __tablename__ = 'private_conversation'
+class ConversationsModel(db.Model):
+
+    __tablename__ = 'conversations'
+
+    def __init__(self, id, message, user, created_on, conversation_id):
+        self.id = id
+        self.message = message
+        self.user = user
+        self.created_on = created_on
+        self.conversation_id = conversation_id
+
+    id = db.Column(db.Integer, db.Sequence('conversations_id_seq'), primary_key=True)
+    message = db.Column(db.Text, primary_key=False)
+    user = db.Column(db.Integer, ForeignKey('users.id'))
+    author = db.relationship("UserModel", foreign_keys=[user])
+    created_on = db.Column(db.DateTime, primary_key=False, default=datetime.datetime.now)
+    conversation_id = db.Column(db.Integer, ForeignKey("conversation.id"))
+    conversation = db.relationship("ConversationModel", backref="chat", foreign_keys=[conversation_id], order_by=id.desc())
 
 
-Base.metadata.create_all(
-    db_engine, Base.metadata.tables.values(), checkfirst=True)
+
+Base.metadata.create_all(db_engine, Base.metadata.tables.values(), checkfirst=True)
