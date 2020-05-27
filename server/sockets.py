@@ -49,10 +49,11 @@ def message(data):
         'id': data['id'],
         'created_on': str(time.datetime.now())
     }
+    user = UserModel.query.filter_by(name=data['author']['name']).first()
     new_message = ConversationsModel(
         id = None,
         message = data['text'],
-        user = data['author']['id'],
+        user = user.id,
         created_on = None,
         conversation_id = data['id']
     )
