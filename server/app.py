@@ -11,8 +11,6 @@ import logging
 import datetime as time
 from retinasdk import FullClient
 from flask_cors import CORS
-import redis
-from elasticsearch import Elasticsearch
 from flask_compress import Compress
 from werkzeug.wrappers import BaseRequest
 from werkzeug.exceptions import HTTPException, NotFound
@@ -41,7 +39,6 @@ config = app.config
 
 app.secret_key = key_c
 app.config['SESSION_TYPE'] = 'redis'
-app.config['ELASTISEARCH_URL'] = 'http://localhost:9200'
 app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql:///newapp"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 app.config['WHOOSH_BASE'] = 'whoosh'
@@ -58,8 +55,6 @@ app.config['UPLOAD_FOLDER_PROFILE_COVER'] = app.root_path + '/static/profile_cov
 app.config['UPLOAD_FOLDER_POST'] = app.root_path + '/static/thumbnail_post'
 app.config['UPLOAD_FOLDER_IMAGES'] = app.root_path + '/static/images/posts'
 app.config['UPLOAD_FOLDER_PODCAST_SERIES'] = app.root_path + '/static/images/podcast_series'
-app.config['CELERY_BROKER_URL'] = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
-app.config['CELERY_RESULT_BACKEND'] = app.config['CELERY_BROKER_URL']
 app.config['REDIS_URL'] = os.environ.get('REDIS_URL')
 app.config['COMPRESS_MIMETYPES'] = ['text/html', 'text/css', 'text/xml', 'application/json', 'application/javascript']
 app.config['COMPRESS_LEVEL'] = 6
@@ -67,15 +62,13 @@ app.config['COMPRESS_MIN_SIZE'] = 500
 
 
 Compress(app)
-redis_sv = redis.Redis()
-es = Elasticsearch(app.config['ELASTISEARCH_URL'])
 db = SQLAlchemy(app)
 mail = Mail(app)
 db_engine = create_engine(app.config.get('SQLALCHEMY_DATABASE_URI'), echo=False)
 db.configure_mappers()
 db.create_all()
 bcrypt = Bcrypt(app)
-socket = SocketIO(app, manage_session=False, cors_allowed_origins='*')
+socket = SocketIO(app, manage_session=False, cors_allowed_origins='*', async_mode='eventlet')
 geolocator = Nominatim(user_agent="NewApp")
 
 translate = FullClient("7eaa96e0-be79-11e9-8f72-af685da1b20e", apiServer="http://api.cortical.io/rest",
@@ -83,67 +76,7 @@ translate = FullClient("7eaa96e0-be79-11e9-8f72-af685da1b20e", apiServer="http:/
 
 cipher_suite = Fernet(key_cr)
 
-from models import UserModel
-
-
-@socket.on('access')
-def access(token):
-    if not token:
-        return make_response(jsonify({'operation': 'failed'}), 401)
-
-    try:
-        token = token['data']
-        user_t = jwt.decode(token, key_c)
-    except:
-        return make_response(jsonify({'operation': 'failed'}), 401)
-
-    join_room('notification-{}'.format(user_t['id']))
-    user = UserModel.query.filter_by(id=user_t['id']).first()
-    user.status = 'Online'
-    user.status_color = '#00c413'
-    db.session.commit()
-
-@socket.on('logout')
-def logout(token):
-    if not token:
-        return make_response(jsonify({'operation': 'failed'}), 401)
-
-    try:
-        token = token['data']
-        user_t = jwt.decode(token, key_c)
-    except:
-        return make_response(jsonify({'operation': 'failed'}), 401)
-
-    leave_room('notification-{}'.format(user_t['id']))
-    user = UserModel.query.filter_by(id=user_t['id']).first()
-    user.status = 'Offline'
-    user.status_color = '#cc1616'
-    db.session.commit()
-
-@socket.on('join')
-def join(data):
-    join_room(data['room'])
-    socket.send("joined", room=data['room'])
-
-@socket.on('send_message')
-def message(data):
-    message = {
-        'text': data['text'],
-        'author': data['author'],
-        'room': data['room'],
-        'created_on': str(time.datetime.now())
-    }
-    socket.emit("get_message", message, room=data['room'])
-
-@socket.on('connect')
-def on_connect():
-    print('my response', {'data': 'Connected'})
-
-
-@socket.on('disconnect')
-def on_disconnect():
-    print('my response', {'data': 'Disconnected'})
-
+import sockets
 
 @app.errorhandler(404)
 def server_error(error):
@@ -185,6 +118,5 @@ app.logger.info(key_jwt['alg'])
 logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO) """
 
 if __name__ == "__main__":
-    app.jinja_env.cache = {}
     socket.run(app, threading=True, host='0.0.0.0', port=5000);
     #app.run(host="192.168.1.4")

@@ -32,7 +32,8 @@ async function SendMessage(){
             name: $session.name,
             realname: $session.real_name
         },
-        room: $currentChat.room
+        room: $currentChat.room,
+        id: $currentChat.id
     })
 }
 
