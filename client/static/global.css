@@ -392,6 +392,24 @@ content direct .conversation .chat {
 	overflow: auto;
 }
 
+content direct .conversation .chat .date-splitter {
+	width: 100%;
+	display: flex;
+	margin: 0.5rem 0rem;
+} 
+
+content direct .conversation .chat .date-splitter hr {
+	width: 15em;
+	color: var(--secondary-background);
+	height: 0.1px;
+}
+
+content direct .conversation .chat .date-splitter span {
+	color: var(--secondary-background);
+	font-size: 0.8rem;
+	text-align: center;
+}
+
 content direct .conversation .chat .not-mine-message {
 	margin-inline-start: 0.5rem;
 	margin-top: 0.5rem;
@@ -514,12 +532,12 @@ content direct .conversation .message button:focus {
 	}
 
 	content direct .conversations {
-		width: 100vw;
+		min-width: calc(100vw - 1.4rem);
 		margin-left: 0.2rem;
 	}
 
 	content direct .conversation {
-		width: 100vw;
+		min-width: calc(100vw - 1.2rem);
 		margin-left: 1.2rem;
 	}
 }

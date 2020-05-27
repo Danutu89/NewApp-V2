@@ -1,5 +1,6 @@
 from app import socket, make_response, jsonify, join_room, leave_room, jwt, time, key_c, db
 from models import UserModel, ConversationModel, ConversationsModel
+import time as time_
 
 @socket.on('access')
 def access(token):
@@ -42,13 +43,30 @@ def join(data):
 
 @socket.on('send_message')
 def message(data):
+    last_date = time.datetime.strptime(data['last_date'], '%a, %d %b %Y %H:%M:%S %Z')
+
+    if (time.datetime.now() - last_date).days >= 1:
+        new_day_from_last = True
+    else:
+        new_day_from_last = False
+
+    if time.datetime.now().date() == last_date.date():
+        new_day = False
+    else:
+        new_day = True
+
     message = {
         'text': data['text'],
         'author': data['author'],
         'room': data['room'],
         'id': data['id'],
-        'created_on': str(time.datetime.now())
+        'at': time.datetime.now().strftime("%H:%M"),
+        'on': time.datetime.now().strftime("%A %d %b"),
+        'datetime': str(time.datetime.now()),
+        'new_day_from_last': new_day_from_last,
+        'new_day': new_day
     }
+
     user = UserModel.query.filter_by(name=data['author']['name']).first()
     new_message = ConversationsModel(
         id = None,

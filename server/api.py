@@ -9,7 +9,7 @@ from models import PostModel, TagModel, LikeModel, ReplyModel, Analyze_Pages, Us
 
 import datetime as dt
 from analyze import parseVisitator, sessionID, GetSessionId, getAnalyticsData
-from sqlalchemy import desc, func, or_
+from sqlalchemy import desc, func, or_, asc
 from sqlalchemy.schema import Sequence
 import smtplib
 import dns.resolver
@@ -1740,24 +1740,46 @@ def messages(id):
     user = UserModel.query.filter_by(id=user_t['id']).first()
 
     if request.method == 'GET':
-        messages = ConversationsModel.query.filter_by(conversation_id=id).order_by(desc(ConversationsModel.id)).all()
+        messages = ConversationsModel.query.filter_by(conversation_id=id).order_by(asc(ConversationsModel.id)).all()
 
         messages_json = []
+        last_date = None
 
-        for m in messages:
+        for index,m in enumerate(messages, start=0):
             if m.author.id == user_t['id']:
                 mine = True
             else:
                 mine = False
+            
+            if last_date is None:
+                last_date = messages[index].created_on
+            else:
+                last_date = messages[index-1].created_on
+
+            if (m.created_on - last_date).days >= 1:
+                new_day_from_last = True
+            else:
+                new_day_from_last = False
+
+
+            if m.created_on.date() == last_date.date():
+                new_day = False
+            else:
+                new_day = True
+
             messages_json.append({
                 'text': m.message,
-                'on': m.created_on,
+                'on': m.date_sent(),
+                'at': m.when_sent(),
+                'datetime': m.created_on,
                 'author': {
                     'name': m.author.name,
                     'realname': m.author.real_name,
                     'avatar': m.author.avatar
                 },
-                'mine': mine
+                'mine': mine,
+                'new_day_from_last': new_day_from_last,
+                'new_day': new_day
             })
 
         return make_response(jsonify(messages_json), 200)

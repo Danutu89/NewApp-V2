@@ -33,15 +33,14 @@ async function SendMessage(){
             realname: $session.real_name
         },
         room: $currentChat.room,
-        id: $currentChat.id
+        id: $currentChat.id,
+        last_date: messages[messages.length -1].datetime
     })
 }
 
 onMount(async ()=>{
     socket.on("connect", function() {
         socket.on("get_message", function(data){
-            console.log(1);
-            
             var mine;
 
             if(data.author.name == $session.name){
@@ -77,6 +76,13 @@ onMount(async ()=>{
         <div class="chat">
         {#if messages}
             {#each messages as message}
+                {#if message.new_day == true || message.new_day_from_last == true}
+                    <div class="date-splitter" style="display: flex">
+                        <hr>
+                        <span style="width: calc({message.on.length} * 0.8rem)">{message.on}</span>
+                        <hr>
+                    </div>
+                {/if}
                 {#if message.mine == true}
                     <div class="mine-message">
                         <div class="user-img">

@@ -692,6 +692,24 @@ class ConversationsModel(db.Model):
     conversation_id = db.Column(db.Integer, ForeignKey("conversation.id"))
     conversation = db.relationship("ConversationModel", backref="chat", foreign_keys=[conversation_id], order_by=id.desc())
 
+    def time_ago(self):
+        now = datetime.datetime.now()
+        now = pytz.utc.localize(now)
+        now_aware = pytz.utc.localize(self.created_on)
+        if (now - now_aware).days / 30 > 1:
+            return str(int((now - now_aware).days / 30)) + ' months'
+        elif int((now - now_aware).days) > 0:
+            return str((now - now_aware).days) + ' days'
+        elif int((now - now_aware).seconds / 3600) > 0:
+            return str(int((now - now_aware).seconds / 3600)) + ' hours'
+        elif (now - now_aware).seconds / 60 > 0:
+            return str(int((now - now_aware).seconds / 60)) + ' minutes'
+
+    def date_sent(self):
+        return self.created_on.strftime("%A %d %b")
+
+    def when_sent(self):
+        return self.created_on.strftime("%H:%M")
 
 
 Base.metadata.create_all(db_engine, Base.metadata.tables.values(), checkfirst=True)
