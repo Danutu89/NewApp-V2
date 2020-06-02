@@ -1,13 +1,13 @@
 
 <script>
-import { stores, goto } from '@sapper/app';
+import { goto } from '@sapper/app';
 import { onMount } from 'svelte';
 import marked from 'marked';
-import { host } from '../modules/Options.js';
+import { host } from '../../modules/Options.js';
 import TurndownService from 'turndown';
-import {instance} from '../modules/Requests.js';
-import {activateAlert} from "../modules/Alert.js";
-const { session } = stores();
+import {instance} from '../../modules/Requests.js';
+import {activateAlert} from "../../modules/Alert.js";
+import {user as User} from '../../modules/Store';
 
 export let article;
 let title_c = article.title;

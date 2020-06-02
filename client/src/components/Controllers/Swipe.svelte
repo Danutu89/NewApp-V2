@@ -239,7 +239,7 @@ function dragReload(e){
         }
         reload.style["min-height"] = (reloadHeight+posY)+'px';
     }
-    console.log(posY, change.y);
+
 }
 
 async function resetLoader(){

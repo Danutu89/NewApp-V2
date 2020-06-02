@@ -1,23 +1,16 @@
 <script>
 import {instance} from '../modules/Requests.js';
-import { wrapper } from '../modules/Variables.js';
 import { onMount, onDestroy } from 'svelte';
 import OpenJoin from '../modules/OpenJoin.js';
 import { host } from '../modules/Options.js';
-import { stores } from '@sapper/app';
+import { user as User } from '../modules/Store';
 import { swipeDirection } from '../modules/Swipe.js';
-const { session } = stores();
-const wrapper_ = wrapper;
+
 
 export let user;
 export let utilities;
 let tag_button = [];
 let isMobile;
-
-let touchstartX = 0;
-let touchstartY = 0;
-let touchendX = 0;
-let touchendY = 0;
 
 let top, height, winHeight;
 
@@ -26,7 +19,7 @@ let window_;
 
 
 function Follow_Tag(tag_) {
-    if($session.auth == false){
+    if($User.auth == false){
         OpenJoin();
         return;
     }
@@ -54,18 +47,6 @@ function Follow_Tag(tag_) {
     })
 }
 
-function TouchStart(event){
-    touchstartX = event.changedTouches[0].screenX;
-    touchstartY = event.changedTouches[0].screenY;
-}
-
-function TouchEnd(event){
-    touchendX = event.changedTouches[0].screenX;
-    touchendY = event.changedTouches[0].screenY;
-    if ($swipeDirection == "none")
-        handleGesture(event);
-}
-
 function onScreenChange(){
     isMobile = window.matchMedia("only screen and (max-width: 1260px)").matches;
     if (isMobile === true){
@@ -91,50 +72,14 @@ onMount(async function(){
     top = document.getElementById("sidebar-left").offsetTop;
     height = document.getElementById("sidebar-left").offsetHeight;
     winHeight = window.innerHeight;
-    //document.addEventListener('touchstart', TouchStart, false);
-
-    //document.addEventListener('touchend', TouchEnd, false); 
     document_ = document;
 })
 
 onDestroy(function(){
     if(document_ && window_){
-        //document_.removeEventListener('touchstart', TouchStart, false);
-        //document_.removeEventListener('touchend', TouchEnd, false); 
         window_.removeEventListener('resize', onScreenChange);
-        try {
-            wrapper_.setTrue(document_.getElementById("sidebar-left"),document_.querySelector("overflow"),document_.querySelector(".newapp-navbar"));   
-        } catch (error) {
-        
-        }
     }
 })
-
-function handleGesture(event) {
-    //Right Swipe
-    if (touchendX - 10 < touchstartX && touchendY - touchstartY < 20 && touchstartY - touchendY < 20 && touchendX != touchstartX) {
-        swipeDirection.set("right");
-        if (!wrapper_.opened){
-            wrapper_.setTrue(document.getElementById("sidebar-left"),document.querySelector("overflow"),document.querySelector(".newapp-navbar"));
-            swipeDirection.set("none");
-        }
-    }
-    //Left Swipe
-    if (touchendX - 10 > touchstartX && touchstartY - touchendY < 20 && touchendY - touchstartY < 20 && touchendX != touchstartX) {
-        swipeDirection.set("left");
-        if (wrapper_.opened){
-            wrapper_.setFalse(document.getElementById("sidebar-left"),document.querySelector("overflow"),document.querySelector(".newapp-navbar"));
-            swipeDirection.set("none");
-        }
-    }
-
-    if(touchendX == touchstartX && touchstartY == touchendY && !document.getElementById("sidebar-left").contains(event.target)){
-        if (!wrapper_.opened){
-            wrapper_.setTrue(document.getElementById("sidebar-left"),document.querySelector("overflow"),document.querySelector(".newapp-navbar"));
-        }
-    }
-
-}
 
 </script>
 
@@ -147,15 +92,15 @@ function handleGesture(event) {
         </div>
     </div>
 </div>
-{#if $session.auth}
+{#if $User.auth}
 <div class="user-card">
-    <a href="/user/{$session.name}" style="display: flex;">
+    <a href="/user/{$User.name}" style="display: flex;">
     <div class="user-image">
-        <img class="profile_image" alt="" data="{$session.avatar}" onerror="this.style.display='none'" height="50px" width="50px" title="profile image">
+        <img class="profile_image" alt="" data="{$User.avatar}" onerror="this.style.display='none'" height="50px" width="50px" title="profile image">
     </div>
     <div class="user-info" style="margin-top: -0.2rem;">
-        <div style="font-size:1.1rem;">{$session.real_name}</div>
-        <div class="user-tag" style="font-size: 0.7rem;">@{$session.name}</div>
+        <div style="font-size:1.1rem;">{$User.real_name}</div>
+        <div class="user-tag" style="font-size: 0.7rem;">@{$User.name}</div>
     </div>
     </a>
 </div>
@@ -179,7 +124,7 @@ function handleGesture(event) {
         <div class="widget-title">Customize your experience</div>
     </div>
     <div class="widget-list" style="max-height: 400px;overflow: auto;">
-        {#if $session.auth}
+        {#if $User.auth}
         {#each user.flw_tags as tag}
         <div class="widget-item" id="widget-tags" style="border-top: none;display: flex;">
             <div class="text">

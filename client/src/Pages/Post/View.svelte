@@ -1,40 +1,20 @@
 <script>
-import SideBarRight from '../SideBarRight.svelte';
-import Post from '../Post.svelte';
-import LSideBarRight from '../Loading/SideBarRight.svelte';
-import LPost from '../Loading/Post.svelte';
-import {onMount, onDestroy} from 'svelte';
-import {isSSR} from '../../modules/Preloads.js';
-import { stores } from '@sapper/app';
-const { page } = stores();
+import SideBarRight from '../../components/SideBarRight.svelte';
+import Post from './components/Post.svelte';
+import LSideBarRight from '../../components/Loading/SideBarRight.svelte';
+import LPost from './components/Loading/Post.svelte';
+import {lPage} from '../../modules/Preloads.js';
 
-export let data;
-let async = undefined, posts = undefined;
-
-onMount(async ()=>{
-    if($isSSR) {
-        isSSR.set(false);
-    } else if(data instanceof Promise) {
-        posts = async () => {
-            const response = await data;
-            if(response.status == 200) {
-                const responseJson = await response;
-                return responseJson.data;
-            } else {
-                throw new Error("Something went wrong");
-            }
-        }
-        async = posts();
-    }
-})
+export let async, data, page;
 </script>
+
 
 <svelte:head>
 {#if (data instanceof Promise) == false}
 <title>{data.title} - NewApp</title>
 <meta name="description" content="{data.description}...">
 <meta property="og:type" content="website">
-<meta property="og:url" content="/post/{$page.params.slug}">
+<meta property="og:url" content="/post/{page.params.slug}">
 <meta property="og:site_name" content="{data.title}">
 <meta name="twitter:title" content="{data.title}">
 {#if data.thumbnail}
@@ -55,7 +35,7 @@ onMount(async ()=>{
     <title>{data.title} - NewApp</title>
     <meta name="description" content="{data.description}...">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="/post/{$page.params.slug}">
+    <meta property="og:url" content="/post/{page.params.slug}">
     <meta property="og:site_name" content="{data.title}">
     <meta name="twitter:title" content="{data.title}">
     {#if data.thumbnail}

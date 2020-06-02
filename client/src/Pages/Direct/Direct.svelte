@@ -1,12 +1,12 @@
 <script>
 import View from './View.svelte';
 import {onMount, beforeUpdate} from 'svelte';
-import {isSSR, lPage} from '../../../modules/Preloads.js';
-import { instance } from '../../../modules/Requests.js';
+import {isSSR, lPage} from '../../modules/Preloads.js';
+import { instance } from '../../modules/Requests.js';
 import { stores, goto } from '@sapper/app';
 const { page } = stores();
 
-export let data, mode;
+export let data;
 let async = undefined, posts = undefined;
 
 function LoadData(){
@@ -17,12 +17,7 @@ function LoadData(){
         posts = async () => {
             let promise, response;
             if($lPage.refresh){
-                if($page.path == '/search')
-                    promise = $lPage.data+''+$page.query.q;
-                else if($page.path == '/tag/'+$page.params.slug)
-                   promise = $lPage.data+''+$page.params.slug;
-                else
-                    promise = $lPage.data;
+                promise = $lPage.data;
                 response = await instance.get(promise);
             }
             else
@@ -51,9 +46,6 @@ function PageUpdated(e){
     LoadData();
 }
 
-
 </script>
 
-
-
-<View mode={mode} data={data} async={async}/>
+<View data={data} async={async}/>

@@ -1,7 +1,7 @@
 <script>
 import Chats from './components/Chats.svelte';
 import Chat from './components/Chat.svelte';
-import {lPage} from '../../../modules/Preloads.js';
+import {lPage} from '../../modules/Preloads.js';
 
 export let data, async;
 

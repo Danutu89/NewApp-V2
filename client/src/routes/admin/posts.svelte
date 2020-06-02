@@ -1,7 +1,8 @@
 <script context="module">
     import {instance} from '../../modules/Requests.js';
-    export async function preload(page, session){
-        if (session.auth == false){
+    import {user as User, get} from '../../modules/Store';
+    export async function preload(page){
+        if (get(User).auth == false){
             this.redirect(302, '/');
         }
         const res = await instance.get('/api/admin/posts').then(function (response) {

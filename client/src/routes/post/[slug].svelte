@@ -1,7 +1,7 @@
 <script context="module">
     import { instance } from '../../modules/Requests.js';
     import { isSSR } from '../../modules/Preloads.js';
-    export async function preload(page,session){
+    export async function preload(page){
         let temp = (page.params.slug).toString().split("-");
         let id = temp[temp.length-1];
         let isSSRPage;
@@ -30,7 +30,7 @@
 </script>
 
 <script>
-import Post from '../../components/Pages/Post.svelte';
+import Post from '../../Pages/Post/Post.svelte';
 export let data;
 
 </script>

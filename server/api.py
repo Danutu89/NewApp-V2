@@ -13,7 +13,7 @@ from sqlalchemy import desc, func, or_, asc
 from sqlalchemy.schema import Sequence
 import smtplib
 import dns.resolver
-import urllib
+import urlparse
 from app import db, serializer, BadSignature, BadTimeSignature, SignatureExpired, mail, translate, key_c, config
 from flask_mail import Message
 import requests
@@ -151,7 +151,10 @@ def home():
         except:
             return make_response(jsonify({'operation': 'failed'}), 401)
         user_info = UserModel.query.filter_by(id=user['id']).first()
+        
     tag = request.args.get('tag')
+    if tag:
+        tag = str(request.args.get('tag')).replace(' ', '+')
     mode = request.args.get('mode')
     search = request.args.get('search')
     if tag:
@@ -320,7 +323,7 @@ def home():
     trending_list.sort(key=getItemForKey, reverse=True)
 
     home_json['posts'] = posts_list
-    home_json['trending'] = trending_list[0:6]
+    home_json['trending'] = trending_list
 
     tags = db.session.query(TagModel).with_entities(TagModel.name).order_by(
         desc(func.array_length(TagModel.post, 1))).limit(10).all()
@@ -760,7 +763,7 @@ def user_settings():
     return make_response(jsonify({'settings': settings_json}), 200)
 
 
-@api.route('/register', methods=['GET', 'POST'])
+@api.route('/register', methods=['POST'])
 def register():
     data = request.json
 
@@ -779,6 +782,8 @@ def register():
         return jsonify({'register': 'Email taken'}), 401
 
     token = serializer.dumps(data['email'], salt='register-confirm')
+
+    
     userInfo = httpagentparser.detect(request.headers.get('User-Agent'))
 
     if request.environ.get('HTTP_X_FORWARDED_FOR') is None:
@@ -812,7 +817,7 @@ def register():
         userLanguage = result_2['languages'][0]['iso639_1']
 
     msg = Message('Confirm Email Registration', sender='contact@newapp.nl', recipients=[data['email']])
-    link = 'https://newapp.nl' + url_for('users.confirm_register', email=data['email'], token=token)
+    link = 'https://newapp.nl' + url_for('api.confirm_register', email=data['email'], token=token)
     msg.html = render_template('email_register.html', register=link, email='contact@newapp.nl')
     mail.send(msg)
     new_user = UserModel(
@@ -930,6 +935,9 @@ def login():
     if bcrypt.check_password_hash(user.password, auth.password) == False:
         return make_response(jsonify({'login': 'Wrong password', 'camp': 'password'}), 401,
                              {'WWW-Authenticate': 'Basic realm="Login Required"'})
+    
+    if user.activated == False:
+        return make_response(jsonify({'login': 'Account not activated'}), 401) 
 
     token = jwt.encode({'id': user.id,
                         'perm_lvl': user.role,

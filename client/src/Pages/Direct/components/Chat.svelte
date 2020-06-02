@@ -1,10 +1,9 @@
 <script>
-import {onMount} from 'svelte';
+import {onMount, onDestroy} from 'svelte';
 import {currentChat} from '../modules/currentChat.js';
-import {instance} from '../../../../modules/Requests.js';
-import {socket} from '../../../../modules/SocketIO.js';
-import { stores } from '@sapper/app';
-const { session } = stores();
+import {instance} from '../../../modules/Requests.js';
+import {socket} from '../../../modules/SocketIO.js';
+import {user as User} from '../../../modules/Store';
 let messages;
 let text;
 
@@ -25,12 +24,12 @@ async function loadChat(){
 async function SendMessage(){
 
     socket.emit("send_message", {
-        token: $session.token,
+        token: $User.token,
         text: text,
         author: {
-            avatar: $session.avatar,
-            name: $session.name,
-            realname: $session.real_name
+            avatar: $User.avatar,
+            name: $User.name,
+            realname: $User.real_name
         },
         room: $currentChat.room,
         id: $currentChat.id,
@@ -43,7 +42,7 @@ onMount(async ()=>{
         socket.on("get_message", function(data){
             var mine;
 
-            if(data.author.name == $session.name){
+            if(data.author.name == $User.name){
                 mine = true;
             }else{
                 mine = false;
@@ -59,6 +58,13 @@ onMount(async ()=>{
             messages = [...messages, message];
         })
     });
+});
+
+onDestroy(async()=>{
+    if($currentChat)
+        socket.emit("leave_room", {
+            room: $currentChat.room
+        });
 });
  
 </script>

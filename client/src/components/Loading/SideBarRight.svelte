@@ -1,11 +1,11 @@
 <script>
-import { stores, goto } from '@sapper/app';
-const { session } = stores();
+import { goto } from '@sapper/app';
+import {user as User} from '../../modules/Store';
 
 export let page;
 </script>
 <div class="sidebar" id="sidebar-right">
-{#if $session.auth == false}
+{#if $User.auth == false}
 <div class="widget" id="widget-register">
         <div class="logo">
                 <img style="vertical-align: middle;margin-left: -1px;" onerror="this.style.display='none'" data="/static/logo.svg" width="80" alt="">
@@ -51,25 +51,25 @@ content .sidebar#sidebar-right{
     align-self: flex-start;
   }
 </style>
-    {#if $session.auth && $session.permissions.edit_post_permission }
+    {#if $User.auth && $User.permissions.edit_post_permission }
         <div class="widget">
         <div class="widget-header">
             <div class="widget-title">Post Actions</div>
         </div>
         <div class="widget-list">
-            {#if $session.permissions.close_post_permission }
+            {#if $User.permissions.close_post_permission }
             <div class="widget-item" style="display: flex;justify-content: space-between;">
                 <div class="text">Close Post</div>
                 <button class="widget-button">Close</button>
             </div>
             {/if }
-            {#if $session.permissions.delete_post_permission }
+            {#if $User.permissions.delete_post_permission }
             <div class="widget-item" style="display: flex;justify-content: space-between;">
                 <div class="text">Delete Post</div>
                 <button  class="widget-button">Delete</button>
             </div>
             {/if } 
-            {#if $session.permissions.edit_post_permission}
+            {#if $User.permissions.edit_post_permission}
             <div class="widget-item" style="display: flex;justify-content: space-between;">
                     <div class="text" style="display:flex;white-space: nowrap;">Edit Post</div>
                     <button class="widget-button">Edit</button>

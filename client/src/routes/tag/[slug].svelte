@@ -21,7 +21,7 @@
     }
 </script>
 <script>
-import Home from '../../components/Pages/Home/Home.svelte'
+import Home from '../../Pages/Home/Home.svelte'
 import { stores } from '@sapper/app';
 const { page } = stores();
 

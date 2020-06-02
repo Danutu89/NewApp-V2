@@ -31,11 +31,9 @@ key_jwt = {
 
 app = Flask(__name__)
 
-CORS(app)
+#CORS(app)
 serializer = URLSafeTimedSerializer(key_c)
 JWTManager(app)
-
-config = app.config
 
 app.secret_key = key_c
 app.config['SESSION_TYPE'] = 'redis'
@@ -47,7 +45,8 @@ app.config['MAIL_PORT'] = 465
 app.config['MAIL_USE_SSL'] = True
 app.config['MAIL_USERNAME'] = 'contact@newapp.nl'
 app.config['MAIL_PASSWORD'] = 'ACmilan89'
-app.config['JWT_ALGORITHM'] = key_jwt['alg']
+app.config['JWT_ALGORITHM'] = "HS256"
+app.config['JWT_KEY'] = "mRo48tU4ebP6jIshqaoNf2HAnesrCGHm"
 app.config['SESSION_COOKIE_SECURE'] = True
 app.config['SESSION_FILE_THRESHOLD'] = 100
 app.config['UPLOAD_FOLDER_PROFILE'] = app.root_path + '/static/profile_pics'
@@ -55,10 +54,11 @@ app.config['UPLOAD_FOLDER_PROFILE_COVER'] = app.root_path + '/static/profile_cov
 app.config['UPLOAD_FOLDER_POST'] = app.root_path + '/static/thumbnail_post'
 app.config['UPLOAD_FOLDER_IMAGES'] = app.root_path + '/static/images/posts'
 app.config['UPLOAD_FOLDER_PODCAST_SERIES'] = app.root_path + '/static/images/podcast_series'
-app.config['REDIS_URL'] = os.environ.get('REDIS_URL')
 app.config['COMPRESS_MIMETYPES'] = ['text/html', 'text/css', 'text/xml', 'application/json', 'application/javascript']
 app.config['COMPRESS_LEVEL'] = 6
 app.config['COMPRESS_MIN_SIZE'] = 500
+
+config = app.config
 
 
 Compress(app)
@@ -97,8 +97,14 @@ from models import PostModel
 wa.whoosh_index(app,PostModel)
 
 from api import api
+from pages.home.home import home
+from pages.users.auth import auth
+from pages.users.users import users
 
 app.register_blueprint(api)
+app.register_blueprint(home)
+app.register_blueprint(users)
+app.register_blueprint(auth)
 
 gunicorn_error_logger = logging.getLogger('gunicorn.info')
 

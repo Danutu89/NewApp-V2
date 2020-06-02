@@ -2,8 +2,8 @@
 import {instance} from '../modules/Requests.js';
 import OpenJoin from '../modules/OpenJoin.js';
 import OpenRegister from '../modules/OpenRegister.js';
-import { stores, goto } from '@sapper/app';
-const { session } = stores();
+import {user as User} from '../modules/Store';
+import { goto } from '@sapper/app';
 
 export let trending;
 export let page;
@@ -13,7 +13,7 @@ export let article;
 let follow_button;
 
 function Follow_User(id){
-    if($session.auth == false){
+    if($User.auth == false){
         OpenJoin();
         return;
     }
@@ -32,7 +32,7 @@ function Follow_User(id){
 }
 
 function Delete_Post(id){
-    if($session.auth == false){
+    if($User.auth == false){
         OpenJoin();
         return;
     }
@@ -56,7 +56,7 @@ function Edit_Post(){
 
 </script>
 <div class="sidebar" id="sidebar-right">
-{#if $session.auth == false}
+{#if $User.auth == false}
 <div class="widget" id="widget-register">
         <div class="logo">
                 <img style="vertical-align: middle;margin-left: -1px;" onerror="this.style.display='none'" data="/static/logo.svg" width="80" alt="">
@@ -120,13 +120,13 @@ function Edit_Post(){
     </div>
     
 {:else if page == "post"}
-    {#if $session.auth && $session.permissions.edit_post_permission }
+    {#if $User.auth && $User.permissions.edit_post_permission }
         <div class="widget">
         <div class="widget-header">
             <div class="widget-title">Post Actions</div>
         </div>
         <div class="widget-list">
-            {#if $session.permissions.close_post_permission }
+            {#if $User.permissions.close_post_permission }
             {#if article.closed == false }
             <div class="widget-item" style="display: flex;justify-content: space-between;">
                 <div class="text">Close Post</div>
@@ -134,13 +134,13 @@ function Edit_Post(){
             </div>
             {/if }
             {/if }
-            {#if $session.permissions.delete_post_permission }
+            {#if $User.permissions.delete_post_permission }
             <div class="widget-item" style="display: flex;justify-content: space-between;">
                 <div class="text">Delete Post</div>
                 <button on:click={()=>{Delete_Post(article.id)}} class="widget-button">Delete</button>
             </div>
             {/if } 
-            {#if $session.permissions.edit_post_permission || $session.id == article.author.id }
+            {#if $User.permissions.edit_post_permission || $User.id == article.author.id }
             <div class="widget-item" style="display: flex;justify-content: space-between;">
                     <div class="text" style="display:flex;white-space: nowrap;">Edit Post</div>
                     <button on:click={Edit_Post} class="widget-button">Edit</button>
@@ -163,9 +163,9 @@ function Edit_Post(){
             </div>
         </a>
             <div class="profile-actions">
-                {#if $session.auth}                                         
-                    {#if author.id == $session.id}
-                    <a href="/user/{$session.name}"><button class="follow-user"
+                {#if $User.auth}                                         
+                    {#if author.id == $User.id}
+                    <a href="/user/{$User.name}"><button class="follow-user"
                         id="follow-user-{author.id}">Profile</button></a>
                     {:else}
                         {#if user.following}

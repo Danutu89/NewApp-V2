@@ -3,7 +3,7 @@ import {onMount, beforeUpdate} from 'svelte'
 import Nav from '../components/Nav.svelte';
 import { loadProgressBar } from 'axios-progress-bar';
 import { stores } from '@sapper/app';
-const { page, session } = stores();
+const { page } = stores();
 import Analytics from '../modules/Analytics.js';
 import SideBarAdmin from '../components/SideBarAdmin.svelte';
 import Alert from '../components/Alert.svelte';
@@ -15,6 +15,9 @@ import { lPage } from '../modules/Preloads.js';
 import { swipeDirection } from '../modules/Swipe.js';
 import Swipe from '../components/Controllers/Swipe.svelte';
 import {socket} from '../modules/SocketIO.js';
+import {user as User} from '../modules/Store';
+import Cookie from 'cookie-universal';
+const cookies = Cookie();
 
 let admin = false;
 let analytics = new Analytics;
@@ -39,6 +42,10 @@ try {
 	admin = false;
 }
 
+$: if(cookies.get('token')){
+	instance.defaults.headers.common['Token'] = cookies.get('token');
+}
+
 function lazyLoad(){
 	var img = document.querySelectorAll("img");
 	img.forEach(image => {
@@ -52,7 +59,7 @@ function lazyLoad(){
 }
 
 async function CheckNotification(id){
-    if($session.auth == false){
+    if($User.auth == false){
         return;
     }
     const not = await instance.get("/api/notifications/check?not_id="+id).then(response =>{
@@ -88,11 +95,6 @@ async function resetLoader(e){
 }
 
 beforeUpdate(async function(){
-	if ($session.auth){
-		instance.defaults.headers.common['Token'] = $session.token;
-	}else{
-		instance.defaults.headers.common['Token'] = '';
-	}
     if($page.query.notification_id){
         CheckNotification($page.query.notification_id);
 	}
@@ -102,19 +104,19 @@ onMount(async function() {
 	reloadHeight = getComputedStyle(reload).height;
 	document.addEventListener('reloaded', resetLoader);
 	loadProgressBar('', instance);
-	if($session.auth){
+	if($User.auth){
 		socket.on('connect', function () {
 			socket.emit('access', {
-				data: $session.token
+				data: $User.token
 			});												
 		});
 		socket.on('disconnect', function () {
 			socket.emit('logout', {
-				data: $session.token
+				data: $User.token
 			});												
 		});
 		
-		document.querySelector("html").setAttribute("theme", $session.theme);			
+		document.querySelector("html").setAttribute("theme", $User.theme);			
 		if (window.Notification && Notification.permission !== "granted") {
 			Notification.requestPermission(function (status) {
 			if (Notification.permission !== status) {
@@ -122,14 +124,14 @@ onMount(async function() {
 			}
 			if (Notification.permission === 'granted'){
 				if ('serviceWorker' in navigator) {
-					navigator.serviceWorker.controller.postMessage($session.token);
+					navigator.serviceWorker.controller.postMessage($User.token);
 				}
 			}
 			});
 		}
 		else if (Notification.permission === 'granted'){
 			if ('serviceWorker' in navigator) {
-				navigator.serviceWorker.controller.postMessage($session.token);
+				navigator.serviceWorker.controller.postMessage($User.token);
 			}
 		}
 	}else{
@@ -163,8 +165,8 @@ beforeUpdate(async function(){
 	}else{
 		admin = false;
 	}
-	if($session.auth)
-		document.querySelector("html").setAttribute("theme", $session.theme);
+	if($User.auth)
+		document.querySelector("html").setAttribute("theme", $User.theme);
 	else{
 		if(window.matchMedia('(prefers-color-scheme: dark)').matches){
 			document.querySelector("html").setAttribute("theme", "Dark");

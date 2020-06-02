@@ -22,7 +22,7 @@
     }
 </script>
 <script>
-import Home from '../components/Pages/Home/Home.svelte'
+import Home from '../Pages/Home/Home.svelte'
 import { onMount, onDestroy  } from "svelte";
 import { stores } from '@sapper/app';
 const { page, session } = stores();

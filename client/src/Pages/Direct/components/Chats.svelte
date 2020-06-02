@@ -1,6 +1,6 @@
 <script>
 import {currentChat} from '../modules/currentChat.js';
-import {socket} from '../../../../modules/SocketIO.js';
+import {socket} from '../../../modules/SocketIO.js';
 import {onMount} from 'svelte';
 
 export let chats;

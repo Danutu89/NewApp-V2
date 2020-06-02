@@ -16,12 +16,12 @@
 </script>
 
 <script>
-import EditPost from '../../../components/EditPost.svelte';
+import Edit from '../../../Pages/Post/Edit.svelte';
 
 export let article;
 </script>
 
-<EditPost article={article}/>
+<Edit article={article}/>
 
 <svelte:head>
 <title>Edit Profile - NewApp</title>

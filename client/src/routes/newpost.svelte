@@ -1,16 +1,17 @@
 <script context="module">
-    export async function preload(page, session){
-        if (session.auth == false){
+    import {user, get} from '../modules/Store'; 
+    export async function preload(page){
+        if (get(user).auth == false){
             this.redirect(302, '/');
         }
     }
 </script>
 
 <script>
-    import NewPost from '../components/NewPost.svelte';
+    import New from '../Pages/Post/New.svelte';
 </script>
 
-<NewPost/>
+<New/>
 
 <svelte:head>
 <title>New Post - NewApp</title>

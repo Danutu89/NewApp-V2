@@ -12,7 +12,6 @@ cryptography==2.8
 cssselect==1.1.0
 DateTime==4.3
 dnspython==1.16.0
-elasticsearch==7.5.1
 enum34==1.1.9
 eventlet==0.25.2
 flake8==3.8.1
@@ -54,12 +53,12 @@ pycparser==2.19
 pyflakes==2.2.0
 PyJWT==1.7.1
 pyquery==1.4.1
+python-dotenv==0.13.0
 python-engineio==3.11.2
 python-socketio==4.4.0
 pytz==2019.3
 pywebpush==1.10.1
 readtime==1.1.1
-redis==3.4.1
 regex==2020.2.20
 requests==2.23.0
 retinasdk==1.0.0

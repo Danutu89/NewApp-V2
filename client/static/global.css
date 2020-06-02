@@ -2232,7 +2232,7 @@ content profile .profile-main .sidebar-info .profile-actions {
 content profile .profile-main .sidebar-info .profile-image .user-name {
 	margin-left: 3rem;
 	color: white;
-	margin-top: 3rem;
+	margin-top: 2rem;
 }
 
 content profile .profile-main .sidebar-info .profile-image .user-name h1 {
@@ -2687,7 +2687,7 @@ new_post .newpost-info {
 
 new_post {
 
-	margin: auto;
+	margin: 0 auto;
 	width: 900px;
 }
 

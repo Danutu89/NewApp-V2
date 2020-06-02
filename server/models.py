@@ -14,8 +14,15 @@ import pytz
 
 Base = declarative_base()
 
+class BaseModel:
+    def add(self):
+        db.session.add(self)
+        db.session.commit()
 
-class UserModel(db.Model):
+    def save(self):
+        db.session.commit()
+
+class UserModel(db.Model, BaseModel):
 
     __tablename__ = 'users'
 
@@ -68,9 +75,9 @@ class UserModel(db.Model):
     likes = relationship("LikeModel", backref="user_in")
     following = db.relationship("UserModel", foreign_keys=[follow])
 
-    def __init__(self, id, join_date, name, real_name, email, password, avatar, genre, role, bio, activated,
-                 ip_address, browser, country_name, country_flag, lang, int_tags, birthday, profession, saved_posts, liked_posts, follow, followed, cover,
-                 instagram, facebook, twitter, github, website, theme, int_podcasts, status, status_color, theme_mode, installed):
+    def __init__(self, id=None, join_date=None, name=None, real_name=None, email=None, password=None, avatar=None, genre=None, role=None, bio=None, activated=None,
+                 ip_address=None, browser=None, country_name=None, country_flag=None, lang=None, int_tags=None, birthday=None, profession=None, saved_posts=None, liked_posts=None, follow=None, followed=None, cover=None,
+                 instagram=None, facebook=None, twitter=None, github=None, website=None, theme=None, int_podcasts=None, status=None, status_color=None, theme_mode=None, installed=None):
         self.id = id
         self.join_date = join_date
         self.name = name
@@ -129,7 +136,7 @@ class UserModel(db.Model):
     def get_not_count(user):
         return Notifications_Model.query.filter_by(checked=False).filter_by(for_user=user).count()
 
-class RoleModel(db.Model):
+class RoleModel(db.Model, BaseModel):
 
     __tablename__ = 'roles'
 
@@ -173,7 +180,7 @@ class RoleModel(db.Model):
         return ('<name {}').format(self.name)
 
 
-class TagModel(db.Model):
+class TagModel(db.Model, BaseModel):
 
     __tablename__ = 'tags'
 
@@ -187,7 +194,7 @@ class TagModel(db.Model):
         self.post = post
 
 
-class PostModel(db.Model):
+class PostModel(db.Model, BaseModel):
 
     __tablename__ = 'posts'
 
@@ -256,7 +263,7 @@ class PostModel(db.Model):
             return str(int((now - now_aware).seconds / 60)) + ' minutes'
 
 
-class ReplyModel(db.Model):
+class ReplyModel(db.Model, BaseModel):
 
     __tablename__ = 'replyes'
 
@@ -280,7 +287,7 @@ class ReplyModel(db.Model):
         return ('<id {}').format(self.id)
 
 
-class ReplyOfReply(db.Model):
+class ReplyOfReply(db.Model, BaseModel):
 
     __tablename__ = 'replies_of_replies'
 
@@ -303,7 +310,7 @@ class ReplyOfReply(db.Model):
     def __repr__(self):
         return ('<id {}').format(self.id)
 
-class LikeModel(db.Model):
+class LikeModel(db.Model, BaseModel):
 
     __tablename__ = 'likes'
 
@@ -320,7 +327,7 @@ class LikeModel(db.Model):
         return ('<id {}').format(self.id)
 
 
-class Analyze_Session(db.Model):
+class Analyze_Session(db.Model, BaseModel):
 
     __tablename__ = 'analyze_session'
 
@@ -354,7 +361,7 @@ class Analyze_Session(db.Model):
         self.iso_code = iso_code
 
 
-class Analyze_Pages(db.Model):
+class Analyze_Pages(db.Model, BaseModel):
 
     __tablename__ = 'analyze_pages'
 
@@ -468,7 +475,7 @@ class Analyze_Pages(db.Model):
         return db.session.query(ReplyModel).count()
 
 
-class Notifications_Model(db.Model):
+class Notifications_Model(db.Model, BaseModel):
 
     __tablename__ = 'notifications'
 
@@ -515,7 +522,7 @@ class Notifications_Model(db.Model):
 
 
 
-class Podcast_SeriesModel(db.Model):
+class Podcast_SeriesModel(db.Model, BaseModel):
 
     __tablename__ = 'podcast_series'
 
@@ -532,7 +539,7 @@ class Podcast_SeriesModel(db.Model):
         self.img = img
 
 
-class PodcastsModel(db.Model):
+class PodcastsModel(db.Model, BaseModel):
 
     __tablename__ = 'podcasts'
 
@@ -561,7 +568,7 @@ class PodcastsModel(db.Model):
         self.source = source
 
 
-class Subscriber(db.Model):
+class Subscriber(db.Model, BaseModel):
     __tablename__ = 'subscriber'
 
     id = db.Column(db.Integer(), primary_key=True, default=None)
@@ -589,7 +596,7 @@ class Subscriber(db.Model):
         self.subscription_info = json.dumps(value)
 
 
-class User_DevicesModel(db.Model):
+class User_DevicesModel(db.Model, BaseModel):
 
     __tablename__ = 'user_devices'
 
@@ -615,7 +622,7 @@ class User_DevicesModel(db.Model):
         self.ip_address = ip_address
 
 
-class Ip_Coordinates(db.Model):
+class Ip_Coordinates(db.Model, BaseModel):
 
     __tablename__ = 'ip_coordinated'
 
@@ -632,7 +639,7 @@ class Ip_Coordinates(db.Model):
         self.latitude = latitude
 
 
-class Coordinates_Location(db.Model):
+class Coordinates_Location(db.Model, BaseModel):
 
     __tablename__ = 'coordinates_locations'
 
@@ -655,7 +662,7 @@ class Coordinates_Location(db.Model):
         self.city = city
         self.iso_code = iso_code
 
-class ConversationModel(db.Model):
+class ConversationModel(db.Model, BaseModel):
 
     __tablename__ = 'conversation'
 
@@ -673,7 +680,7 @@ class ConversationModel(db.Model):
     last_message_id =  db.Column(db.Integer, ForeignKey("conversations.id"))
     last_message = db.relationship("ConversationsModel", foreign_keys=[last_message_id], order_by=id.desc())
 
-class ConversationsModel(db.Model):
+class ConversationsModel(db.Model, BaseModel):
 
     __tablename__ = 'conversations'
 

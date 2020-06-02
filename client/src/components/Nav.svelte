@@ -1,6 +1,8 @@
 <script>
 import Login from './Login.svelte';
 import Register from './Register.svelte';
+import Auth from '../modules/Auth';
+import {user as User} from '../modules/Store'
 import { onMount } from 'svelte';
 import { stores, goto } from '@sapper/app';
 import { host } from '../modules/Options.js';
@@ -10,8 +12,8 @@ import {instance} from '../modules/Requests.js';
 import { activateAlert } from '../modules/Alert.js';
 import {lPage} from '../modules/Preloads.js';
 import {socket} from '../modules/SocketIO.js';
-const cookies = Cookie();
-const { session, page } = stores();
+
+const { page } = stores();
 var jwt_decode = require('jwt-decode');
 
 let notificationListener;
@@ -36,17 +38,6 @@ socket.on("notification", ()=> {
   fetchNotifications();
 });
 
-function LogOut(){
-  if($session.auth == true){
-      /*socketio.emit('logout', {
-				data: $session.token
-			});*/	
-      cookies.remove("token");
-      instance.defaults.headers.common['Token']= '';
-      location.reload();
-  }
-}
-
 function onClickDocument(e){
   if(!user || !user_center || !user_image || !overflow)
     return;
@@ -54,7 +45,7 @@ function onClickDocument(e){
   if((!notification_list || !notifications || !notifications_c || !notifications_center_c) && isMobile == false)
     return;
 
-  if($session.auth){
+  if($User.auth){
     if(!user_image.contains(e.target) && !user_center.contains(e.target)){
 
       if(isMobile == false){
@@ -142,17 +133,17 @@ onMount(async function(){
   document.addEventListener('click', onClickDocument, {
     capture: true
   });
-  if ($session.auth)
+  if ($User.auth)
     fetchNotifications();
 
   var n_id = null;
-  /*if($session.auth){
+  /*if($User.auth){
     n_id = fetchNotificationsInterval();
   }else{
     if(n_id)
       window.clearInterval(n_id);
   }*/
-  if($session.theme == 'Dark'){
+  if($User.theme == 'Dark'){
     toggle.classList.add('active');
   }
   if(isMobile){
@@ -194,19 +185,12 @@ function CloseMenu(){
 
 function ToggleTheme(){
   var decoded;
-  var token_d = $session;
-  try{
-    //instance.get('/api/settheme')
-    session.set(token_d);
-    cookies.set("token", decoded, {maxAge:60 * 60 * 24 * 30, path: '/'});
-  }catch{
-    //alert
-  }
+  var token_d = $User;
   if(toggle.classList.contains("active") === true){
-    token_d.theme = 'Light';
+    User.setItem('theme', 'Light');
     toggle.classList.remove("active");
   }else{
-    token_d.theme = 'Dark';
+    User.setItem('theme', 'Dark');
     toggle.classList.add("active");
   }
 }
@@ -252,7 +236,7 @@ function goHome(){
     </div>
   </div>
   <div style="margin-inline-start: auto;display:flex;">
-  {#if $session.auth == true}
+  {#if $User.auth == true}
     {#if isMobile == false}
      <div bind:this={notifications_c} class="navbar-item">
        <div class="newapp-dropdown" id="notification-center" style="cursor: pointer;">
@@ -303,18 +287,18 @@ function goHome(){
       </div>
      <div class="navbar-item" style="cursor: pointer;" id="navbar_profile_image">
             <div bind:this={user_center} class="newapp-dropdown" id="user-center">
-                <img data="{$session.avatar}" bind:this={user_image} id="user-image" height={p_image} width={p_image} onerror="this.style.visibility='none'" on: style="border-radius: 30px;margin-top: 1px;" alt="">
+                <img data="{$User.avatar}" bind:this={user_image} id="user-image" height={p_image} width={p_image} onerror="this.style.visibility='none'" on: style="border-radius: 30px;margin-top: 1px;" alt="">
               <div bind:this={user} class="newapp-dropdown-content" id="user" style="display: none;">
                 <div class="dropdown-user" style="display:flex;cursor: default;">
-                  <img data="{$session.avatar}" id="user-dropdown-image" height="40px" width="40px" onerror="this.style.visibility='none'" style="border-radius: 30px;margin-top: 1px;" alt="">
+                  <img data="{$User.avatar}" id="user-dropdown-image" height="40px" width="40px" onerror="this.style.visibility='none'" style="border-radius: 30px;margin-top: 1px;" alt="">
                   <div class="info" style="margin-left: 0.5rem;line-height: 1.3;">        
-                    <span>{$session.real_name}</span>
+                    <span>{$User.real_name}</span>
                     <br>
-                    <span style="font-size:0.7rem;">@{$session.name}</span>
+                    <span style="font-size:0.7rem;">@{$User.name}</span>
                   </div>
                 </div>
                 <hr>
-                <a href="/user/{$session.name}" style="color: var(--navbar-color);">
+                <a href="/user/{$User.name}" style="color: var(--navbar-color);">
                 <div class="dropdown-item" on:click={CloseMenu}>
                   <i class="na-user"></i> 
                   <span>Profile</span>
@@ -344,7 +328,7 @@ function goHome(){
                   <i class="na-chevron-right"></i>
                 </div>
                 </a>
-                {#if $session.permissions.admin_panel_permission == true}
+                {#if $User.permissions.admin_panel_permission == true}
                 <a rel="preload" href="/admin" style="color: var(--navbar-color);">
                 <div class="dropdown-item" on:click={CloseMenu}>
                   <i class="na-user-shield"></i> 
@@ -368,7 +352,7 @@ function goHome(){
                   </div>
                 </div>
                 <span style="color: var(--navbar-color);">
-                  <div class="dropdown-item" on:click={()=>{CloseMenu(),LogOut()}}>
+                  <div class="dropdown-item" on:click={()=>{CloseMenu(),Auth.logout()}}>
                     <i class="na-sign-out-alt"></i> 
                     <span>Logout</span>
                   </div>
@@ -385,7 +369,7 @@ function goHome(){
 		</div>
 </nav>
 
-{#if $session.auth == false && admin == false}
+{#if $User.auth == false && admin == false}
 <Login/>
 <Register/>
 <Join/>

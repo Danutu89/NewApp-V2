@@ -1,11 +1,7 @@
 <script>
+import Auth from '../modules/Auth';
 import { onMount } from 'svelte';
-import {instance} from '../modules/Requests.js';
 import { stores } from '@sapper/app';
-import { host } from '../modules/Options.js';
-import Cookie from 'cookie-universal';
-const cookies = Cookie();
-const { session, page } = stores();
 var jwt_decode = require('jwt-decode');
 
 let l_modal;
@@ -58,21 +54,7 @@ async function Login(){
     return;
   }
   
-
-  const res = await instance.get('/api/login',{
-    auth: {
-      username: String(username).toLowerCase(),
-      password: password
-    }
-  }).then(function (response){
-    return response;
-  }).catch(function (error) {
-    if (error.response) {
-      return error.response;
-    }
-  });
-  const json = await res;
-  var login_check = json;
+  var login_check = await Auth.login(username, password);
   check = login_check.data.login;
 
   if (login_check.status != 200){
@@ -101,18 +83,8 @@ async function Login(){
 
   }
 
-  try {
-    decoded = jwt_decode(check);
-  } catch (error) {
-    console.log(error);
-    decoded = false;
-  }
-
-  if (decoded != false){
-    cookies.set("token", check,{maxAge:60 * 60 * 24 * 30, path: '/'});
-    window.location.reload();
-    CloseModalLogin();
-  }
+  window.location.reload();
+  CloseModalLogin();
 
 }
 

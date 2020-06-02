@@ -2,15 +2,16 @@
 <script>
 
 export let article;
-import { onMount, beforeUpdate, onDestroy } from 'svelte';
-import OpenJoin from '../modules/OpenJoin.js';
-import { host } from '../modules/Options.js';
-import {instance} from '../modules/Requests.js';
-import { swipeDirection } from '../modules/Swipe.js';
+import { onMount, beforeUpdate } from 'svelte';
+import OpenJoin from '../../../modules/OpenJoin.js';
+import { host } from '../../../modules/Options.js';
+import {instance} from '../../../modules/Requests.js';
+import { swipeDirection } from '../../../modules/Swipe.js';
+import {user as User} from '../../../modules/Store';
 import TurndownService from 'turndown';
 import marked from 'marked';
 import { stores } from '@sapper/app';
-const { page, session } = stores();
+const { page } = stores();
 
 let like_button;
 let reply_likes = [];
@@ -74,7 +75,7 @@ function likePostAnim(){
 }
 
 function Like_Post() {
-    if($session.auth == false){
+    if($User.auth == false){
         OpenJoin();
         return;
     }
@@ -103,7 +104,7 @@ function likeReplyAnim(){
 }
 
 function Like_Reply(id) {
-    if($session.auth == false){
+    if($User.auth == false){
         OpenJoin();
         return;
     }
@@ -120,7 +121,7 @@ function Like_Reply(id) {
 }
 
 async function Reply(type){
-    if($session.auth == false){
+    if($User.auth == false){
         OpenJoin();
         return;
     }
@@ -137,10 +138,10 @@ async function Reply(type){
     let reply;
     let payload;
     if (type == 'post'){
-        payload = {content: markdown, token: $session.token, post_id: article.id, type: 'post'};
+        payload = {content: markdown, token: $User.token, post_id: article.id, type: 'post'};
         
     }else{
-        payload = { content: markdown, token: $session.token, post_id: article.id, type: 'reply', reply_id: reply_id };
+        payload = { content: markdown, token: $User.token, post_id: article.id, type: 'reply', reply_id: reply_id };
     }
     let json = await instance.post('/api/newreply',  payload).then((response) =>{
         return response;
@@ -158,14 +159,14 @@ async function Reply(type){
         return;
     }
 
-    reply = {'id': data.data['reply_id'], 'text': markdown,author: {'id': $session.id, 'name': $session.name, 'avatar': $session.avatar, 'status': 'Online', 'reply_id': data['id']}};
+    reply = {'id': data.data['reply_id'], 'text': markdown,author: {'id': $User.id, 'name': $User.name, 'avatar': $User.avatar, 'status': 'Online', 'reply_id': data['id']}};
     article.replies = [...article.replies,reply];
     PR.prettyPrint();
     editor.value("");
 }
 
 function Comment(_reply_id,reply_author){
-    if($session.auth == false){
+    if($User.auth == false){
         OpenJoin();
         return;
     }
@@ -191,7 +192,7 @@ function Comment(_reply_id,reply_author){
 }
 
 async function Delete_Reply(id){
-    if($session.auth == false){
+    if($User.auth == false){
         return;
     }
     const not = await instance.get("/api/reply/delete?id="+id).then(response =>{
@@ -229,10 +230,10 @@ function Edit_Reply(reply){
 }
 
 async function C_Edit_Reply(){
-    if($session.auth == false && $session.id != editing_id.author.id || $session.permissions.edit_reply_permission == false){
+    if($User.auth == false && $User.id != editing_id.author.id || $User.permissions.edit_reply_permission == false){
         return;
     }
-    const resp = await instance.post("/api/reply/edit?id="+editing_id.id,{content: marked(editor.value()), r_id: editing_id.id, token: $session.token}).then(response =>{
+    const resp = await instance.post("/api/reply/edit?id="+editing_id.id,{content: marked(editor.value()), r_id: editing_id.id, token: $User.token}).then(response =>{
         if(response.status != 200){
             //alert
             return;
@@ -315,40 +316,8 @@ function onClickDocument(e){
     }
 }
 
-function TouchStart(event){
-    touchstartX = event.changedTouches[0].screenX;
-    touchstartY = event.changedTouches[0].screenY;
-    touchstartEl = event.targetTouches[0].target;
-}
-
-function TouchEnd(event){
-    touchendX = event.changedTouches[0].screenX;
-    touchendY = event.changedTouches[0].screenY;
-    if($swipeDirection == "none")
-        handleGesture(event);
-}
-
-function handleGesture(event){
-    var h = window.innerHeight;
-    if (touchstartY - 20 > touchendY && touchstartX - touchendX < 20 && touchendX - touchstartX < 20 && touchstartY != touchendY){
-        swipeDirection.set("up");
-        if(touchstartY - h > -20){
-            options_list.classList.add("toggled");
-            swipeDirection.set("none");
-        }
-    }
-    if (touchstartY + 20 < touchendY && touchstartX - touchendX < 20 && touchendX - touchstartX < 20 && touchstartY != touchendY){
-        swipeDirection.set("down")
-        if(options_list.contains(touchstartEl)){
-            options_list.classList.remove("toggled");
-            swipeDirection.set("none");
-        }
-    }
-
-}
-
 function savePost(){
-    if ($session.auth == false){
+    if ($User.auth == false){
         OpenJoin();
         return;
     }
@@ -379,7 +348,7 @@ async function copyLink(){
 onMount(async function(){
     document_ = document;
     var ua = navigator.userAgent;
-    if (ua.includes('wv') && $session.auth == false) {
+    if (ua.includes('wv') && $User.auth == false) {
         OpenJoin();
         webview = true;
     } else {
@@ -404,15 +373,12 @@ onMount(async function(){
         capture: true
     });
     overflow = document.querySelector("overflow");
-    document.addEventListener('touchstart', TouchStart, false);
-    document.addEventListener('touchend', TouchEnd, false); 
+
 })
 
-onDestroy(()=>{
-    if(document_){
-        document_.removeEventListener('touchstart', TouchStart, false);
-        document_.removeEventListener('touchend', TouchEnd, false);
-    }
+beforeUpdate(async()=>{
+    if(PR)
+        PR.prettyPrint();
 });
 
 </script>
@@ -450,7 +416,7 @@ onDestroy(()=>{
                     <br>
                     
                     <div class="user-actions">
-                        {#if $session.auth}
+                        {#if $User.auth}
                         {#if article.user['liked']}
                         <span style="cursor: pointer;margin-right:0.5rem;" on:click|preventDefault={Like_Post}><i id="heart"
                                 class="na-heart" bind:this={like_button}></i>
@@ -569,12 +535,12 @@ onDestroy(()=>{
                 </span>
             </div>
             <div  style="margin-inline-start: auto;display:flex;">
-                {#if $session.auth}
+                {#if $User.auth}
                 <div class="reply-actions">
-                {#if $session.id == reply.author.id || $session.permissions.edit_reply_permission == true}
+                {#if $User.id == reply.author.id || $User.permissions.edit_reply_permission == true}
                     <button class="edit" on:click={()=>{Edit_Reply(reply)}}>Edit</button>
                 {/if}
-                {#if $session.id == reply.author.id || $session.permissions.delete_reply_permission == true}
+                {#if $User.id == reply.author.id || $User.permissions.delete_reply_permission == true}
                     <button class="delete" on:click={()=>{Delete_Reply(reply.id)}}>Delete</button>
                 {/if}
                 </div>
@@ -588,6 +554,6 @@ onDestroy(()=>{
     <p style="margin-top: 1rem; font-size:initial;color:var(--color);">Not the answer you're looking for? Browse other questions tagged
         {#each article.tags as tag}<a href="/tag/{tag}"
             style="font-size:13px;margin-left:3px;"><tag>{tag}</tag> </a>{/each}
-        {#if $session.auth}or <a href="/newpost" rel="prefetch" style="color:#18BC9C;"> ask your own question</a>{/if}.</p>
+        {#if $User.auth}or <a href="/newpost" rel="prefetch" style="color:#18BC9C;"> ask your own question</a>{/if}.</p>
 </div>
 {/if}

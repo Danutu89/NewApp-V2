@@ -2,7 +2,7 @@
     import { instance } from '../modules/Requests.js';
     import { isSSR, lPage } from '../modules/Preloads.js';
     lPage.set({data: '/api/home', refresh: false});
-    export async function preload(page,session){
+    export async function preload(page){
         let isSSRPage;
         const res = instance.get('/api/home');
         lPage.set({data: '/api/home', refresh: false});
@@ -21,10 +21,7 @@
     }
 </script>
 <script>
-import Home from '../components/Pages/Home/Home.svelte'
-import { onMount, onDestroy  } from "svelte";
-import { stores } from '@sapper/app';
-const { page, session } = stores();
+import Home from '../Pages/Home/Home.svelte'
 
 export let data;
 </script>

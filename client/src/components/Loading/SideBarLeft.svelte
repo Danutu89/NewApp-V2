@@ -1,9 +1,8 @@
 <script>
-import { stores } from '@sapper/app';
-const { session } = stores();
+import {user as User} from '../../modules/Store';
 </script>
 <div class="sidebar" id="sidebar-left">
-{#if $session.auth}
+{#if $User.auth}
 <div class="user-card">
     <div style="display: flex;">
     <div class="user-image" style="margin-bottom:0;">

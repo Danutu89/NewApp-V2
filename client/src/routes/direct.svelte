@@ -1,10 +1,11 @@
 <script context="module">
     import { instance } from '../modules/Requests.js';
     import { isSSR, lPage } from '../modules/Preloads.js';
+    import {user, get} from '../modules/Store';
     lPage.set({data: '/api/home?mode=saved', refresh: false});
-    export async function preload(page,session){
+    export async function preload(page){
         let isSSRPage;
-        if(session.auth === false){
+        if(get(user).auth === false){
             this.redirect(302,'/');
         }
 
@@ -26,7 +27,7 @@
     }
 </script>
 <script>
-import Direct from '../components/Pages/Direct/Direct.svelte';
+import Direct from '../Pages/Direct/Direct.svelte';
 
 export let data;
 </script>

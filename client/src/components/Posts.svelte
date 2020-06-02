@@ -2,8 +2,7 @@
 import {instance} from '../modules/Requests.js';
 import OpenJoin from '../modules/OpenJoin.js';
 import SPost from './Loading/SPost.svelte';
-import { stores } from '@sapper/app';
-const { session } = stores();
+import { user as User } from '../modules/Store';
 import {host} from '../modules/Options.js';
 import {onMount, onDestroy} from 'svelte';
 
@@ -15,7 +14,7 @@ let isLoadMore = true, CanLoad = false;
 let loadPosts;
 
 function SavePost(id){
-    if ($session.auth == false){
+    if ($User.auth == false){
         OpenJoin();
         return;
     }
@@ -113,16 +112,14 @@ function onScroll(e) {
                         <span class="article-readtime" style="font-size: 0.8rem;color: grey;margin-right: 0.4rem;">
                             {article.read_time}
                         </span>
-                        <button class="article-save" id="save-{article.id}" bind:this={save_button[article.id]} on:click={()=>SavePost(article.id)}>{#if $session.auth}{#if article.saved}Saved{:else}Save{/if}{:else}Save{/if}</button>
+                        <button class="article-save" id="save-{article.id}" bind:this={save_button[article.id]} on:click={()=>SavePost(article.id)}>{#if $User.auth}{#if article.saved}Saved{:else}Save{/if}{:else}Save{/if}</button>
                 </div>
                 </div>
             </div>
     {/each}
     {#if (loadPosts instanceof Promise ) == true}
         {#await loadPosts}
-            {#each Array(2) as x}
-                <SPost/>
-            {/each}
+            <SPost/>
         {/await}
     {/if}
 </div>

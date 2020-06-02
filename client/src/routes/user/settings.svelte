@@ -13,7 +13,7 @@
 </script>
 
 <script>
-    import Settings from '../../components/Settings.svelte';
+    import Settings from '../../Pages/User/Settings.svelte';
 
     export let user;
 </script>

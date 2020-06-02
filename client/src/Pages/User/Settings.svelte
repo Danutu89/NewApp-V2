@@ -1,11 +1,11 @@
 <script>
-import {instance} from '../modules/Requests.js';
+import {instance} from '../../modules/Requests.js';
+import {user as User} from '../../modules/Store';
 import { onMount } from 'svelte';
-import { stores, goto } from '@sapper/app';
-import { host } from '../modules/Options.js';
+import { goto } from '@sapper/app';
+import { host } from '../../modules/Options.js';
 import Cookie from 'cookie-universal';
 const cookies = Cookie();
-const {session} = stores();
 var jwt_decode = require('jwt-decode');
 
 export let user;
@@ -50,7 +50,7 @@ function SwitchPanel(panel){
 }
 
 async function SaveSettings(){
-  var token = $session.token;
+  var token = $User.token;
   let formdata = new FormData();
 
   try {
@@ -102,7 +102,7 @@ async function SaveSettings(){
 
   if (decoded != false){
     cookies.set("token", resp.data['token'],{maxAge:60 * 60 * 24 * 30, path: '/'});
-    session.set({
+    User.set({
 				name: decoded.name,
 				id: decoded.id,
 				avatar: decoded.avatar,
