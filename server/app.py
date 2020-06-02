@@ -33,7 +33,7 @@ key_jwt = {
     "alg": "HS256"
 }
 
-app = Flask(__name__, static_folder='/static')
+app = Flask(__name__, static_url_path='/static')
 
 #CORS(app)
 serializer = URLSafeTimedSerializer(key_c)
