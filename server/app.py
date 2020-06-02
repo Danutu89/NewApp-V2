@@ -37,7 +37,7 @@ JWTManager(app)
 
 app.secret_key = key_c
 app.config['SESSION_TYPE'] = 'redis'
-app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql:///newapp"
+app.config['SQLALCHEMY_DATABASE_URI'] = "danutu@postgresql:///newapp"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 app.config['WHOOSH_BASE'] = 'whoosh'
 app.config['MAIL_SERVER'] = 'smtp.zoho.eu'
