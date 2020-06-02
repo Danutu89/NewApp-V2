@@ -1,4 +1,4 @@
-from __future__ import unicode_literals
+# -*- coding: utf-8 -*-
 from flask import Flask, redirect, request, jsonify, make_response, json
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
