@@ -1,2 +1,2 @@
-export let host = 'http://192.168.1.183';
-export let sockets = 'http://192.168.1.183';
+export let host = 'https://new-app.dev';
+export let sockets = 'https://new-app.dev';
