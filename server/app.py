@@ -35,7 +35,7 @@ key_jwt = {
 
 app = Flask(__name__, static_url_path='/static')
 
-#CORS(app)
+CORS(app)
 serializer = URLSafeTimedSerializer(key_c)
 JWTManager(app)
 
