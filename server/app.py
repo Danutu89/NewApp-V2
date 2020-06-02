@@ -1,3 +1,4 @@
+from __future__ import unicode_literals
 from flask import Flask, redirect, request, jsonify, make_response, json
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
@@ -18,6 +19,9 @@ from flask_socketio import SocketIO, join_room, leave_room
 from flask_jwt_extended import JWTManager
 from geopy.geocoders import Nominatim
 import flask_whooshalchemy as wa
+import sys
+reload(sys)
+sys.setdefaultencoding('utf-8')
 
 key_c = "mRo48tU4ebP6jIshqaoNf2HAnesrCGHm"
 key_cr = b'vgF_Yo8-IutJs-AcwWPnuNBgRSgncuVo1yfc9uqSiiU='

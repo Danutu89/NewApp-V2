@@ -26,9 +26,6 @@ from webptools import webplib as webp
 import json
 from pywebpush import webpush, WebPushException
 from app import socket
-import sys
-reload(sys)
-sys.setdefaultencoding('utf-8')
 
 api = Blueprint(
     'api', __name__,
