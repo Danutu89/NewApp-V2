@@ -22,6 +22,8 @@ import flask_whooshalchemy as wa
 import sys
 reload(sys)
 sys.setdefaultencoding('utf-8')
+import psycopg2
+psycopg2.extensions.register_type(psycopg2.extensions.UNICODE)
 
 key_c = "mRo48tU4ebP6jIshqaoNf2HAnesrCGHm"
 key_cr = b'vgF_Yo8-IutJs-AcwWPnuNBgRSgncuVo1yfc9uqSiiU='
