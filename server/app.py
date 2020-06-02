@@ -22,7 +22,6 @@ import flask_whooshalchemy as wa
 import sys
 reload(sys)
 sys.setdefaultencoding('utf-8')
-print(sys.getdefaultencoding())
 
 key_c = "mRo48tU4ebP6jIshqaoNf2HAnesrCGHm"
 key_cr = b'vgF_Yo8-IutJs-AcwWPnuNBgRSgncuVo1yfc9uqSiiU='
