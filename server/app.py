@@ -22,8 +22,6 @@ import flask_whooshalchemy as wa
 import sys
 reload(sys)
 sys.setdefaultencoding('utf-8')
-import psycopg2
-psycopg2.extensions.register_type(psycopg2.extensions.UNICODE)
 
 key_c = "mRo48tU4ebP6jIshqaoNf2HAnesrCGHm"
 key_cr = b'vgF_Yo8-IutJs-AcwWPnuNBgRSgncuVo1yfc9uqSiiU='
@@ -43,7 +41,7 @@ JWTManager(app)
 
 app.secret_key = key_c
 app.config['SESSION_TYPE'] = 'redis'
-app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://danutu:468255@localhost/newapp"
+app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://danutu:468255@localhost/newapp?client_encoding=utf8"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 app.config['WHOOSH_BASE'] = 'whoosh'
 app.config['MAIL_SERVER'] = 'smtp.zoho.eu'
@@ -70,7 +68,7 @@ config = app.config
 Compress(app)
 db = SQLAlchemy(app)
 mail = Mail(app)
-db_engine = create_engine(app.config.get('SQLALCHEMY_DATABASE_URI'), echo=False)
+db_engine = create_engine(app.config.get('SQLALCHEMY_DATABASE_URI'), echo=False, client_encoding='utf8')
 db.configure_mappers()
 db.create_all()
 bcrypt = Bcrypt(app)
