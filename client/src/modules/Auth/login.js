@@ -6,10 +6,8 @@ const cookies = Cookie();
 
 export default async(username,pass)=>{
     const res = await instance.post(get(Api)['auth.login'],{
-        auth: {
         username: String(username).toLowerCase(),
         password: pass
-        }
     }).then(function (response){
         return response;
     }).catch(function (error) {
