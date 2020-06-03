@@ -1,7 +1,7 @@
 <script>
-import {currentChat} from '../modules/currentChat.js';
 import {socket} from '../../../modules/SocketIO.js';
 import {onMount} from 'svelte';
+import {currentChat} from '../../../modules/Store';
 
 export let chats;
 let isMobile;
@@ -11,6 +11,7 @@ function gotoChat(chat){
     if(isMobile)
         directElement.style.transform = "translate3d(-100vw, 0px, 0px)";
     currentChat.set(chat);
+    document.dispatchEvent(new CustomEvent("changedChat"));
     
 }
 

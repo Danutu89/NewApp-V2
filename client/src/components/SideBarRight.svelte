@@ -2,7 +2,7 @@
 import {instance} from '../modules/Requests.js';
 import OpenJoin from '../modules/OpenJoin.js';
 import OpenRegister from '../modules/OpenRegister.js';
-import {user as User} from '../modules/Store';
+import {user as User, api as Api} from '../modules/Store';
 import { goto } from '@sapper/app';
 
 export let trending;
@@ -17,7 +17,7 @@ function Follow_User(id){
         OpenJoin();
         return;
     }
-    instance.get('/api/follow-user/' + id, { progress: false }).then((response) => {
+    instance.get($Api['follow.user'] + id, { progress: false }).then((response) => {
         if (response.status != 200){
             //alert
             return;
@@ -36,7 +36,7 @@ function Delete_Post(id){
         OpenJoin();
         return;
     }
-    instance.get('/api/post/delete/' + id).then((response)=>{
+    instance.get($Api['post.delete'] + id).then((response)=>{
         if (response.status != 200){
             //alert
             return;

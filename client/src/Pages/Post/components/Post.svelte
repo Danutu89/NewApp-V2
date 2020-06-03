@@ -7,7 +7,7 @@ import OpenJoin from '../../../modules/OpenJoin.js';
 import { host } from '../../../modules/Options.js';
 import {instance} from '../../../modules/Requests.js';
 import { swipeDirection } from '../../../modules/Swipe.js';
-import {user as User} from '../../../modules/Store';
+import {user as User, api as Api} from '../../../modules/Store';
 import TurndownService from 'turndown';
 import marked from 'marked';
 import { stores } from '@sapper/app';
@@ -109,7 +109,7 @@ function Like_Reply(id) {
         return;
     }
     likeReplyAnim();
-    instance.get('/api/like-post/' + article.id, {progress: false})
+    instance.get($Api['post.like'] + article.id, {progress: false})
         .then(response => {
             if(response.status != 200){
                 likeReplyAnim();
@@ -143,7 +143,7 @@ async function Reply(type){
     }else{
         payload = { content: markdown, token: $User.token, post_id: article.id, type: 'reply', reply_id: reply_id };
     }
-    let json = await instance.post('/api/newreply',  payload).then((response) =>{
+    let json = await instance.post($Api['replies.new'],  payload).then((response) =>{
         return response;
     });
     
@@ -195,7 +195,7 @@ async function Delete_Reply(id){
     if($User.auth == false){
         return;
     }
-    const not = await instance.get("/api/reply/delete?id="+id).then(response =>{
+    const not = await instance.get($Api['replies.delete']+id).then(response =>{
         if(response.status != 200){
             //alert
             return;
@@ -233,7 +233,7 @@ async function C_Edit_Reply(){
     if($User.auth == false && $User.id != editing_id.author.id || $User.permissions.edit_reply_permission == false){
         return;
     }
-    const resp = await instance.post("/api/reply/edit?id="+editing_id.id,{content: marked(editor.value()), r_id: editing_id.id, token: $User.token}).then(response =>{
+    const resp = await instance.post($Api['replies.edit'],{content: marked(editor.value()), r_id: editing_id.id, token: $User.token}).then(response =>{
         if(response.status != 200){
             //alert
             return;
@@ -321,7 +321,7 @@ function savePost(){
         OpenJoin();
         return;
     }
-    instance.get('/api/save-post/' + article.id, { progress: false }).then(response=>{
+    instance.get($Api['post.save'] + article.id, { progress: false }).then(response=>{
         if(response.data['operation'] == 'saved'){
             saveButton.innerHTML = saveButton.childNodes[0].outerHTML+' Saved';
             saveButton.childNodes[0].classList.add("scale-anim");

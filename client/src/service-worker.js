@@ -21,7 +21,7 @@ const urlB64ToUint8Array = base64String => {
 };
 
 const saveSubscription = async (subscription,data) => {
-	const SERVER_URL = "https://newapp.nl/api/save-subscription";
+	const SERVER_URL = "/api/v2/users/notifications/subscribe";
 	const response = await fetch(SERVER_URL, {
 	  method: "post",
 	  headers: {

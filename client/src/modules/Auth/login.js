@@ -1,11 +1,11 @@
 import jwtdecode from 'jwt-decode';
 import {instance} from '../Requests.js';
-import {user} from '../Store';
+import {user as User, api as Api, get} from '../Store';
 import Cookie from 'cookie-universal';
 const cookies = Cookie();
 
 export default async(username,pass)=>{
-    const res = await instance.get('/api/login',{
+    const res = await instance.get(get(Api)['auth.login'],{
         auth: {
         username: String(username).toLowerCase(),
         password: pass
@@ -25,7 +25,7 @@ export default async(username,pass)=>{
     var userDecoded = jwtdecode(json.data.login);
     
     if(typeof(window) != "undefined")
-        user.set({
+        User.set({
             auth: true,
             name: userDecoded.name,
             real_name: userDecoded.realname,

@@ -2,7 +2,7 @@
 import Login from './Login.svelte';
 import Register from './Register.svelte';
 import Auth from '../modules/Auth';
-import {user as User} from '../modules/Store'
+import {user as User, api as Api} from '../modules/Store'
 import { onMount } from 'svelte';
 import { stores, goto } from '@sapper/app';
 import { host } from '../modules/Options.js';
@@ -109,7 +109,7 @@ function onClickDocument(e){
 }
 
 async function fetchNotifications(){
-    var not = await instance.get('/api/notifications?ex=false', { pregress: false }).then((response)=>{
+    var not = await instance.get($Api['notifications.index']+'?ex=false', { pregress: false }).then((response)=>{
       return response.data;
     });                      
     notifications = await not;  

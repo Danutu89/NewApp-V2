@@ -2779,7 +2779,7 @@ editpost .newpost-info {
 
 editpost {
 
-	margin: auto;
+	margin: 0 auto;
 	width: 900px;
 }
 

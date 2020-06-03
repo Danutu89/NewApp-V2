@@ -1,41 +1,12 @@
 <script>
 import {onMount, onDestroy} from 'svelte';
-import {currentChat} from '../modules/currentChat.js';
 import {instance} from '../../../modules/Requests.js';
 import {socket} from '../../../modules/SocketIO.js';
-import {user as User} from '../../../modules/Store';
+import {user as User, currentChat} from '../../../modules/Store';
+import {loadChat, SendMessage} from '../actions/actions.js';
 let messages;
 let text;
-
-$: if ($currentChat){
-    loadChat();
-}
-
-async function loadChat(){
-    const res = await instance.get("/api/direct/mess/"+$currentChat.id);
-    const json = await res.data;
-    messages = json;
-    socket.emit("join", {
-        room: $currentChat.room
-    })
-    
-}
-
-async function SendMessage(){
-
-    socket.emit("send_message", {
-        token: $User.token,
-        text: text,
-        author: {
-            avatar: $User.avatar,
-            name: $User.name,
-            realname: $User.real_name
-        },
-        room: $currentChat.room,
-        id: $currentChat.id,
-        last_date: messages[messages.length -1].datetime
-    })
-}
+let _document;
 
 onMount(async ()=>{
     socket.on("connect", function() {
@@ -58,6 +29,8 @@ onMount(async ()=>{
             messages = [...messages, message];
         })
     });
+    _document = document;
+    _document.addEventListener('changedChat', async()=>{messages= await loadChat()});
 });
 
 onDestroy(async()=>{
@@ -65,6 +38,9 @@ onDestroy(async()=>{
         socket.emit("leave_room", {
             room: $currentChat.room
         });
+    if(_document){
+        _document.removeEventListener('changedChat', async()=>{messages= await loadChat()});
+    }
 });
  
 </script>
@@ -115,7 +91,7 @@ onDestroy(async()=>{
             <div class="textarea">
                 <textarea bind:value={text} type="text" name="message" id="message" style="margin-bottom: 0;min-height: 1.2rem;" contenteditable></textarea>
             </div>
-            <button on:click={SendMessage}>Send</button>
+            <button on:click={()=>{SendMessage(messages, text)}}>Send</button>
         </div>
     {/if}
 </div>

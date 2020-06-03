@@ -1,7 +1,7 @@
 <script>
-import {user as User} from '../../../modules/Store';
 import {instance} from '../../../modules/Requests.js';
 import OpenJoin from '../../../modules/OpenJoin.js';
+import {user as User, api as Api} from '../../../modules/Store';
 
 export let user;
 
@@ -10,7 +10,7 @@ let follow_button;
 function Follow_User(id) {
   if ($User.auth) {
     if ($User.id != id) {
-      instance.get('/api/follow-user/' + id)
+      instance.get($Api['follow.user'] + id)
         .then(response => {
           if (response.data['operation'] == 'unfollowed') {
             follow_button.innerHTML = 'Follow';

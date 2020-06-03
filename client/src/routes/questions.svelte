@@ -1,11 +1,12 @@
 <script context="module">
     import { instance } from '../modules/Requests.js';
     import { isSSR, lPage } from '../modules/Preloads.js';
-    lPage.set({data: '/api/home?mode=questions', refresh: false});
+    import {get, api as Api, user as User} from '../modules/Store';
+    lPage.set({data: get(Api)['home.index']+'?mode=questions', refresh: false});
     export async function preload(page,session){
         let isSSRPage;
-        const res = instance.get('/api/home?mode=questions');
-        lPage.set({data: '/api/home?mode=questions', refresh: false});
+        const res = instance.get(get(Api)['home.index']+'?mode=questions');
+        lPage.set({data: get(Api)['home.index']+'?mode=questions', refresh: false});
         isSSR.subscribe(value => {
             isSSRPage = value;
         })();

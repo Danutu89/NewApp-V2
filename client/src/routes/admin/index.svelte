@@ -1,6 +1,6 @@
 <script context="module">
     import {instance} from '../../modules/Requests.js';
-    import {user as User, get} from '../../modules/Store';
+    import {user as User, get, api as Api} from '../../modules/Store';
     export async function preload(page){
         if (get(User).auth == false){
             this.redirect(302, '/');

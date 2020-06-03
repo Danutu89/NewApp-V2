@@ -7,7 +7,7 @@ import { host } from '../../modules/Options.js';
 import TurndownService from 'turndown';
 import {instance} from '../../modules/Requests.js';
 import {activateAlert} from "../../modules/Alert.js";
-import {user as User} from '../../modules/Store';
+import {user as User, api as Api} from '../../modules/Store';
 
 export let article;
 let title_c = article.title;
@@ -17,7 +17,7 @@ let turndown = TurndownService();
 let text_c = turndown.turndown(article.text);
 
 async function EditPost(){
-    const res = await instance.post('/api/post/edit/'+article.id,{title: title_c,text: marked(editor.value()),id: article.id}).then(function (response) {
+    const res = await instance.post($Api['post.edit']+article.id,{title: title_c,text: marked(editor.value()),id: article.id}).then(function (response) {
             if(response.status !=200){
                 //alert
                 return;

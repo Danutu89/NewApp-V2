@@ -28,7 +28,7 @@ export default function writable(key, initialValue) {
     set(value) {
       if(typeof(window) != "undefined")
         localStorage.setItem(key, JSON.stringify(value))
-        set(value)
+      set(value)
     },
     setItem(keyTemp, value){
       if(typeof(window) != "undefined"){

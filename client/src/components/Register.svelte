@@ -1,4 +1,6 @@
 <script>
+import Auth from '../modules/Auth';
+import {api as Api} from '../modules/Store';
 import {instance} from '../modules/Requests.js';
 import { onMount } from "svelte";
 import { host } from '../modules/Options.js';
@@ -10,7 +12,7 @@ let l_modal;
 let r_modal;
 
 async function CheckUsername(){
-    const res = await instance.get('api/register/check/username/'+username, { progress: false }).then(function (response) {
+    const res = await instance.get($Api['auth.username']+username, { progress: false }).then(function (response) {
             return response.data;
         });
     const json = await res;
@@ -29,7 +31,7 @@ async function CheckUsername(){
 };
 
 async function CheckEmail(){
-    const res = await instance.get('/api/register/check/email/'+email, { progress: false }).then(function (response) {
+    const res = await instance.get($Api['auth.check_email']+email, { progress: false }).then(function (response) {
             return response.data;
         });
     const json = await res;
@@ -88,11 +90,7 @@ async function RegisterUser(){
         password_c.reportValidity();
         return;
     }
-    const res = await instance.post('/api/register' ,{ username: username, email: email, realname: realname, password: password }).then(function (response) {
-            return response.data;
-        });
-    const json = await res;
-    register_check = json.register;
+    register_check = await Auth.register({ username: username, email: email, realname: realname, password: password }).then(res=>{return res.register});
 
 }
 

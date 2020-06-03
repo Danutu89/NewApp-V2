@@ -15,7 +15,8 @@ import { lPage } from '../modules/Preloads.js';
 import { swipeDirection } from '../modules/Swipe.js';
 import Swipe from '../components/Controllers/Swipe.svelte';
 import {socket} from '../modules/SocketIO.js';
-import {user as User} from '../modules/Store';
+import {user as User, api as Api} from '../modules/Store';
+import {setApiUrls} from '../modules/Api';
 import Cookie from 'cookie-universal';
 const cookies = Cookie();
 
@@ -62,7 +63,7 @@ async function CheckNotification(id){
     if($User.auth == false){
         return;
     }
-    const not = await instance.get("/api/notifications/check?not_id="+id).then(response =>{
+    const not = await instance.get($Api['notifications.check'] + id).then(response =>{
         if(response.status != 200){
             //alert
             return;
@@ -94,13 +95,8 @@ async function resetLoader(e){
 	
 }
 
-beforeUpdate(async function(){
-    if($page.query.notification_id){
-        CheckNotification($page.query.notification_id);
-	}
-})
-
 onMount(async function() {
+	setApiUrls();
 	reloadHeight = getComputedStyle(reload).height;
 	document.addEventListener('reloaded', resetLoader);
 	loadProgressBar('', instance);
@@ -173,6 +169,9 @@ beforeUpdate(async function(){
 		}else{
 			document.querySelector("html").setAttribute("theme", "Light");
 		}
+	}
+	if($page.query.notification_id){
+        CheckNotification($page.query.notification_id);
 	}
 });
 </script>

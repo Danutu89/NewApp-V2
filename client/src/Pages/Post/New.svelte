@@ -3,7 +3,7 @@ import { onMount } from 'svelte';
 import marked from 'marked';
 import {instance} from '../../modules/Requests.js';
 import { host } from '../../modules/Options.js';
-import {user as User} from '../../modules/Store';
+import {user as User, api as Api} from '../../modules/Store';
 import { goto } from '@sapper/app';
 
 let editor, editor_s;
@@ -46,7 +46,7 @@ async function NewPost(){
     let payload = {content: markdown, title: title, tags: tags, token: $User.token, image: image}
     formdata.append('data', JSON.stringify(payload));
 
-    let json = await instance.post(host+'/api/newpost', formdata, {headers: {'Content-Type': 'multipart/form-data'}}).then((response) =>{
+    let json = await instance.post($Api['post.new'], formdata, {headers: {'Content-Type': 'multipart/form-data'}}).then((response) =>{
         return response.data;
     })
     let data = await json;

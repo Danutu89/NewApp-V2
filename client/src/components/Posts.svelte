@@ -2,7 +2,7 @@
 import {instance} from '../modules/Requests.js';
 import OpenJoin from '../modules/OpenJoin.js';
 import SPost from './Loading/SPost.svelte';
-import { user as User } from '../modules/Store';
+import { user as User, api as Api } from '../modules/Store';
 import {host} from '../modules/Options.js';
 import {onMount, onDestroy} from 'svelte';
 
@@ -18,7 +18,7 @@ function SavePost(id){
         OpenJoin();
         return;
     }
-    instance.get('/api/save-post/' + id, { progress: false }).then(response=>{
+    instance.get($Api['posts.save'] + id, { progress: false }).then(response=>{
         if(response.data['operation'] == 'saved'){
             save_button[id].innerHTML = 'Saved';
         }else if(response.data['operation'] == 'deleted'){
@@ -42,11 +42,11 @@ function LoadMore(){
     page_++;
     var args;
     if(user){
-        args =  '?mode='+mode + "&user=" + user;
+        args =  '?mode='+mode + "&user=" + user+'&page='+page_;
     }else{
-        args =  '?mode='+mode;
+        args =  '?mode='+mode+'&page='+page_;
     }
-    loadPosts = instance.get('/api/home/'+ page_ + args, { progress: false }).then(function (response) {
+    loadPosts = instance.get($Api['home.index'] + args, { progress: false }).then(function (response) {
         data = [...data , ...response.data['posts']];
         data = data;
         if (response.data['hasnext']){

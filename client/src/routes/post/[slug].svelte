@@ -1,11 +1,12 @@
 <script context="module">
     import { instance } from '../../modules/Requests.js';
     import { isSSR } from '../../modules/Preloads.js';
+    import {get, api as Api} from '../../modules/Store';
     export async function preload(page){
         let temp = (page.params.slug).toString().split("-");
         let id = temp[temp.length-1];
         let isSSRPage;
-        const res = instance.get('/api/post/'+id);
+        const res = instance.get(get(Api)['post.index']+id);
         isSSR.subscribe(value => {
             isSSRPage = value;
         })();

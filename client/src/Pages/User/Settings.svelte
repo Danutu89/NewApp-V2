@@ -1,6 +1,6 @@
 <script>
 import {instance} from '../../modules/Requests.js';
-import {user as User} from '../../modules/Store';
+import {user as User, api as Api} from '../../modules/Store';
 import { onMount } from 'svelte';
 import { goto } from '@sapper/app';
 import { host } from '../../modules/Options.js';
@@ -85,7 +85,7 @@ async function SaveSettings(){
   }
   formdata.append('data', JSON.stringify(payload));
 
-  const resp = await instance.post('/api/user/settings', formdata, {headers: {'Content-Type': 'multipart/form-data'}}).then((response)=>{
+  const resp = await instance.post($Api['users.settings'], formdata, {headers: {'Content-Type': 'multipart/form-data'}}).then((response)=>{
     return response;
   })
 

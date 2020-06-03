@@ -3,7 +3,7 @@ import {instance} from '../modules/Requests.js';
 import { onMount, onDestroy } from 'svelte';
 import OpenJoin from '../modules/OpenJoin.js';
 import { host } from '../modules/Options.js';
-import { user as User } from '../modules/Store';
+import {user as User, api as Api} from '../modules/Store'
 import { swipeDirection } from '../modules/Swipe.js';
 
 
@@ -23,7 +23,7 @@ function Follow_Tag(tag_) {
         OpenJoin();
         return;
     }
-    instance.get('/api/follow-tag/' + tag_, { progress: false })
+    instance.get($Api['follow.tag'] + tag_, { progress: false })
         .then(function (response){
             var x = tag_button[tag_];
             tag_button[tag_] = x;

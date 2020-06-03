@@ -1,15 +1,15 @@
 <script context="module">
     import { instance } from '../modules/Requests.js';
     import { isSSR, lPage } from '../modules/Preloads.js';
-    import {user, get} from '../modules/Store';
-    lPage.set({data: '/api/home?mode=saved', refresh: false});
+    import {get, api as Api, user as User} from '../modules/Store';
+    lPage.set({data: get(Api)['home.index']+'?mode=saved', refresh: false});
     export async function preload(page){
         let isSSRPage;
-        if(get(user).auth === false){
+        if(get(User).auth === false){
             this.redirect(302,'/');
         }
-        const res = instance.get('/api/home?mode=saved');
-        lPage.set({data: '/api/home?mode=saved', refresh: false});
+        const res = instance.get(get(Api)['home.index']+'?mode=saved');
+        lPage.set({data: get(Api)['home.index']+'?mode=saved', refresh: false});
         isSSR.subscribe(value => {
             isSSRPage = value;
         })();

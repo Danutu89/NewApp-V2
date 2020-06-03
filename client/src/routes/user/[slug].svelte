@@ -1,9 +1,10 @@
 <script context="module">
     import { instance } from '../../modules/Requests.js';
     import { isSSR } from '../../modules/Preloads.js';
+    import {get, api as Api} from '../../modules/Store';
     export async function preload(page,session){
         let isSSRPage;
-        const res = instance.get('/api/user/'+page.params.slug);
+        const res = instance.get(get(Api)['users.user']+page.params.slug);
         isSSR.subscribe(value => {
             isSSRPage = value;
         })();

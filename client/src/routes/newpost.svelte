@@ -1,7 +1,7 @@
-<script context="module">
-    import {user, get} from '../modules/Store'; 
+<script context="module"> 
+    import {get, user as User} from '../modules/Store';
     export async function preload(page){
-        if (get(user).auth == false){
+        if (get(User).auth == false){
             this.redirect(302, '/');
         }
     }
