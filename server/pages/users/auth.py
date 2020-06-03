@@ -122,7 +122,7 @@ def register():
         userLanguage = result_2['languages'][0]['iso639_1']
 
     msg = Message('Confirm Email Registration', sender='contact@newapp.nl', recipients=[data['email']])
-    link = 'https://newapp.nl/register/confirm?email={}&token={}'.format(data['email'], token)
+    link = 'https://new-app.dev/user/confirm?email={}&token={}'.format(data['email'], token)
     msg.html = render_template('email_register.html', register=link, email='contact@newapp.nl')
     mail.send(msg)
 
@@ -156,10 +156,10 @@ def confirm():
     except BadSignature:
         return jsonify({'confirm': 'Invalid Token'}), 401
 
-    users = db.session.query(UserModel).filter_by(email=request.args.get('email')).first()
+    users = UserModel.filter_by(email=request.args.get('email')).first()
     users.activated = True
 
-    db.session.commit()
+    UserModel.save()
 
     return jsonify({'confirm': 'success'}), 200
 

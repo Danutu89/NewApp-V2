@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from flask import Flask, redirect, request, jsonify, make_response, json
+from flask import Flask, redirect, request, jsonify, make_response, json, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from sqlalchemy import create_engine
@@ -19,6 +19,7 @@ from flask_socketio import SocketIO, join_room, leave_room
 from flask_jwt_extended import JWTManager
 from geopy.geocoders import Nominatim
 import flask_whooshalchemy as wa
+import re
 import sys
 reload(sys)
 sys.setdefaultencoding('utf-8')
@@ -42,6 +43,7 @@ JWTManager(app)
 app.secret_key = key_c
 app.config['SESSION_TYPE'] = 'redis'
 app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://danutu:468255@localhost/newapp?client_encoding=utf8"
+#danutu:468255@localhost
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 app.config['WHOOSH_BASE'] = 'whoosh'
 app.config['MAIL_SERVER'] = 'smtp.zoho.eu'
@@ -100,15 +102,30 @@ from models import PostModel
 
 wa.whoosh_index(app,PostModel)
 
-from api import api
 from pages.home.home import home
 from pages.users.auth import auth
 from pages.users.users import users
+from pages.follow.follow import follow
+from pages.users.notifications import notifications
+from pages.users.direct import direct
+from pages.post.post import post
+from pages.post.replies import replies
 
-app.register_blueprint(api)
 app.register_blueprint(home)
+app.register_blueprint(post)
+app.register_blueprint(replies)
 app.register_blueprint(users)
+app.register_blueprint(notifications)
+app.register_blueprint(direct)
 app.register_blueprint(auth)
+app.register_blueprint(follow)
+
+@app.route("/api/v2")
+def getApi():
+    routes = {}
+    for rule in app.url_map.iter_rules():
+        routes[rule.endpoint] = re.sub('<[^>]+>',"",'%s' % rule)     
+    return make_response(jsonify(routes), 200)
 
 gunicorn_error_logger = logging.getLogger('gunicorn.info')
 
@@ -128,5 +145,5 @@ app.logger.info(key_jwt['alg'])
 logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO) """
 
 if __name__ == "__main__":
-    socket.run(app, threading=True, host='0.0.0.0', port=5000);
+    socket.run(app, host='0.0.0.0', port=5000);
     #app.run(host="192.168.1.4")

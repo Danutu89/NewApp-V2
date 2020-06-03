@@ -121,5 +121,3 @@ def index(*args, **kwargs):
     }
 
     return make_response(jsonify(home_json), 200)
-
-    
