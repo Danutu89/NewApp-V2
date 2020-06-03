@@ -5,7 +5,7 @@ import Cookie from 'cookie-universal';
 const cookies = Cookie();
 
 export default async(username,pass)=>{
-    const res = await instance.get(get(Api)['auth.login'],{
+    const res = await instance.post(get(Api)['auth.login'],{
         auth: {
         username: String(username).toLowerCase(),
         password: pass
