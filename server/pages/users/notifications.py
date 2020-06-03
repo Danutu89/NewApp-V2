@@ -100,7 +100,7 @@ def check(id, *args, **kwargs):
     return make_response(jsonify({'operation': 'success'}), 200)
 
 
-@notifications.route("/subscribe")
+@notifications.route("/subscribe", methods=['POST'])
 @AuthRequired
 def subscribe(*args, **kwargs):
     if request.method != 'POST':
