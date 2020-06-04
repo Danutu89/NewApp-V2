@@ -112,7 +112,7 @@ def index(*args, **kwargs):
         posts_json.clear()
 
 
-    if user or page:
+    if user or page > 1:
         home_json = {
             'posts': {
                 'list': posts_list,
