@@ -40,24 +40,20 @@ socket.on("notification", ()=> {
 function onClickDocument(e){
   if(!user || !user_center || !user_image || !overflow)
     return;
-  
-  if((!notification_list || !notifications || !notifications_c || !notifications_center_c) && $DeviceType != "mobile")
+
+  if((!notification_list || !notifications || !notifications_c || !notifications_center_c) & $DeviceType != "mobile")
     return;
 
   if($User.auth){
     if(!user_image.contains(e.target) && !user_center.contains(e.target)){
-
-      if($DeviceType != "mobile"){
+        
+        
         if(notifications_c.contains(e.target)){
           user.style["display"] = "none";
         }else if(user.style["display"] == "block"){
           user.style["display"] = "none";
           overflow.classList.remove("show");
         }
-      }else{
-        user.style["display"] = "none";
-        overflow.classList.remove("show");
-      }
     }else if(user_image.contains(e.target)){
       if(user.style["display"] == "none"){
         user.style["display"] = "block";
@@ -240,7 +236,7 @@ function goHome(){
   </div>
   <div style="margin-inline-start: auto;display:flex;">
   {#if $User.auth == true}
-    {#if $DeviceType == "mobile"}
+    {#if $DeviceType != "mobile"}
      <div bind:this={notifications_c} class="navbar-item">
        <div class="newapp-dropdown" id="notification-center" style="cursor: pointer;">
          <i class="na-bell"></i>
