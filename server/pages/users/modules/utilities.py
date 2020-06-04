@@ -77,3 +77,28 @@ def SaveImage(userId, type):
 
 def GetItemForKeyN(value):
     return value['id']
+
+def generateUserToken(user, userIP):
+    token = jwt.encode(
+        {
+            'id': user.id,
+            'perm_lvl': user.role,
+            'permissions': {
+                'post_permission': user.roleinfo.post_permission,
+                'delete_post_permission': user.roleinfo.delete_post_permission,
+                'delete_reply_permission': user.roleinfo.delete_reply_permission,
+                'edit_post_permission': user.roleinfo.edit_post_permission,
+                'edit_reply_permission': user.roleinfo.edit_reply_permission,
+                'close_post_permission': user.roleinfo.close_post_permission,
+                'admin_panel_permission': user.roleinfo.admin_panel_permission
+            },
+            'name': user.name,
+            'realname': user.real_name,
+            'avatar': user.avatar,
+            'theme': user.theme,
+            'theme_mode': user.theme_mode,
+            'ip': userIP,
+            'epx': str(dt.datetime.now() + dt.timedelta(minutes=60))
+        }, config['JWT_KEY'])
+
+    return token

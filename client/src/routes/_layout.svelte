@@ -96,6 +96,27 @@ async function resetLoader(e){
 	
 }
 
+function updatePage(){
+	var path = location.pathname;
+	if(path.includes('admin')){
+		admin = true;
+	}else{
+		admin = false;
+	}
+	if($User.auth)
+		document.querySelector("html").setAttribute("theme", $User.theme);
+	else{
+		if(window.matchMedia('(prefers-color-scheme: dark)').matches){
+			document.querySelector("html").setAttribute("theme", "Dark");
+		}else{
+			document.querySelector("html").setAttribute("theme", "Light");
+		}
+	}
+	if($page.query.notification_id){
+        CheckNotification($page.query.notification_id);
+	}
+}
+
 onMount(async function() {
 	setApiUrls();
 	reloadHeight = getComputedStyle(reload).height;
@@ -153,28 +174,9 @@ onMount(async function() {
 			url = location.href;
 	 	});
 	}, true);
+	document.addEventListener("urlPathUpdated", updatePage);
 });
 
-beforeUpdate(async function(){
-	var path = location.pathname;
-	if(path.includes('admin')){
-		admin = true;
-	}else{
-		admin = false;
-	}
-	if($User.auth)
-		document.querySelector("html").setAttribute("theme", $User.theme);
-	else{
-		if(window.matchMedia('(prefers-color-scheme: dark)').matches){
-			document.querySelector("html").setAttribute("theme", "Dark");
-		}else{
-			document.querySelector("html").setAttribute("theme", "Light");
-		}
-	}
-	if($page.query.notification_id){
-        CheckNotification($page.query.notification_id);
-	}
-});
 </script>
 
 <Nav admin={admin}/>

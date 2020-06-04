@@ -265,9 +265,6 @@ function updateElements(){
 
     //reload req
     reload = document.querySelector("reload");
-    console.log(sidebar);
-    
-
 }
 
 onMount(()=>{
@@ -276,6 +273,7 @@ onMount(()=>{
     document.addEventListener("touchmove", swipeMove);
     document.addEventListener("touchend", swipeEnd);
     document.addEventListener("urlPathUpdated", updateElements);
+    document.addEventListener("changedDeviceType", updateElements);
 
     document.addEventListener('reloaded', resetLoader);
 

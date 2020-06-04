@@ -7,6 +7,7 @@ from models import UserModel, Ip_Coordinates
 import requests
 import httpagentparser
 from flask_mail import Message
+from .modules.utilities import generateUserToken
 
 
 auth = Blueprint('auth', __name__, url_prefix='/api/v2/users/auth')
@@ -45,24 +46,7 @@ def login():
     
     userIP = userIP.split(', ')[0]
 
-    token = jwt.encode({'id': user.id,
-                        'perm_lvl': user.role,
-                        'permissions': {
-                            'post_permission': user.roleinfo.post_permission,
-                            'delete_post_permission': user.roleinfo.delete_post_permission,
-                            'delete_reply_permission': user.roleinfo.delete_reply_permission,
-                            'edit_post_permission': user.roleinfo.edit_post_permission,
-                            'edit_reply_permission': user.roleinfo.edit_reply_permission,
-                            'close_post_permission': user.roleinfo.close_post_permission,
-                            'admin_panel_permission': user.roleinfo.admin_panel_permission
-                        },
-                        'name': user.name,
-                        'realname': user.real_name,
-                        'avatar': user.avatar,
-                        'theme': user.theme,
-                        'theme_mode': user.theme_mode,
-                        'ip': userIP,
-                        'epx': str(dt.datetime.now() + dt.timedelta(minutes=60))}, config['JWT_KEY'])
+    token = generateUserToken(user, userIP)
 
     return make_response(jsonify({'login': token.decode('UTF-8')}), 200)
 
@@ -148,7 +132,7 @@ def register():
 @auth.route('/register/confirm', methods=['GET'])
 def confirm():
     try:
-        email = serializer.loads(request.args.get('token'), salt='register-confirm', max_age=300)
+        email_token = serializer.loads(request.args.get('token'), salt='register-confirm', max_age=300)
     except SignatureExpired:
         return jsonify({'confirm': 'Invalid Token'}), 401
     except BadTimeSignature:
@@ -156,12 +140,21 @@ def confirm():
     except BadSignature:
         return jsonify({'confirm': 'Invalid Token'}), 401
 
-    users = UserModel.filter_by(email=request.args.get('email')).first()
-    users.activated = True
+    user = UserModel.filter_by(email=request.args.get('email')).first()
+    user.activated = True
 
     UserModel.save()
 
-    return jsonify({'confirm': 'success'}), 200
+    if request.environ.get('HTTP_X_FORWARDED_FOR') is None:
+        userIP = request.environ['REMOTE_ADDR']
+    else:
+        userIP = request.environ['HTTP_X_FORWARDED_FOR']
+    
+    userIP = userIP.split(', ')[0]
+
+    token = generateUserToken(user, userIP)
+
+    return jsonify({'confirm': 'success', 'token': token}), 200
 
 
 @auth.route('/register/check/username/<string:user>', methods=['GET'])

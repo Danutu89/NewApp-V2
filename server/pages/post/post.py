@@ -66,7 +66,7 @@ def index(id, *args, **kwargs):
 
     return make_response(jsonify(post_json), 200)
 
-@post.route("/new")
+@post.route("/new", methods=['POST'])
 @AuthRequired
 def new(*args, **kwargs):
     if request.method != 'POST':
@@ -76,7 +76,7 @@ def new(*args, **kwargs):
 
     data = json.loads(str(request.form['data']).decode('utf-8', errors='replace'))
 
-    if not data['token'] or not data['title'] or not data['content'] or not data['title'] or not data['tags']:
+    if not data['title'] or not data['content'] or not data['title'] or not data['tags']:
         return make_response(jsonify({'operation': 'error', 'error': 'Missing data'}), 401)
 
     index = db.session.execute(Sequence('posts_id_seq'))
@@ -146,11 +146,11 @@ def new(*args, **kwargs):
     db.session.commit()
 
     return make_response(jsonify(
-                            {
-                                'operation': 'success',
-                                'link': '/post/' + (str(data['title']).replace(' ', '-')).replace('?','') + '-' + str(index)
-                            }
-                        ), 200)
+        {
+            'operation': 'success',
+            'link': '/post/' + (str(data['title']).replace(' ', '-')).replace('?','') + '-' + str(index)
+        }
+        ), 200)
 
 @post.route('/delete/<int:id>')
 @AuthRequired

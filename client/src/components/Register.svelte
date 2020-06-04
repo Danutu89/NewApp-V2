@@ -42,7 +42,7 @@ async function CheckEmail(){
         email_c.reportValidity();
         email_check = false;
     }
-    else if (/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(email) === false){
+    else if (/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{1,4})+$/.test(email) === false){
         email_c.setCustomValidity("Please match the format");
         email_c.focus();
         email_c.classList.add('error');

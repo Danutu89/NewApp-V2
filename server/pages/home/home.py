@@ -58,7 +58,7 @@ def index(*args, **kwargs):
 
         query = query.filter(PostModel.id.in_(tgi))
     elif search:
-        query = query.whoosh_search(request.args.get('search'))
+        query = query.whoosh_search(search)
     elif user:
         query = query.filter_by(user=user)
     else:

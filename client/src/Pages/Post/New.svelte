@@ -33,7 +33,7 @@ async function NewPost(){
         tags_s.reportValidity();
         return;
     }
-    tags = String(tags).replace(/ /g, "+");
+    //tags = String(tags).replace(/ /g, " ");
     let markdown = marked(editor.value());
     let image = false;
     let formdata = new FormData();

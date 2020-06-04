@@ -3,7 +3,7 @@ from flask import Blueprint, make_response, jsonify, request
 from sqlalchemy import desc, func, or_, asc
 import datetime as dt
 from models import TagModel, ReplyModel, PostModel, UserModel
-from .modules.utilities import AuthOptional, AuthRequired, jwt, config, SaveImage
+from .modules.utilities import AuthOptional, AuthRequired, jwt, config, SaveImage, generateUserToken
 import json
 
 users = Blueprint('users', __name__, url_prefix='/api/v2/users')
@@ -93,55 +93,36 @@ def user(name, *args, **kwargs):
     return make_response(jsonify(user_json), 200)
 
 
-@users.route('/user/settings', methods=['GET', 'POST'])
+@users.route('/settings', methods=['GET', 'POST'])
 @AuthRequired
 def settings(*args, **kwargs):
 
     currentUser = UserModel.query.filter_by(id=kwargs['token']['id']).first_or_404()
 
     if request.method == 'POST':
+        print(request)
         data = json.loads(request.form['data'].encode().decode('utf-8'))
 
         # if str(user_info.email).replace(" ", "") != str(data['email']).replace(" ",""):
+        for key, setting in data.iteritems():
 
-        currentUser.real_name = data['real_name']
-        currentUser.email = data['email']
-        currentUser.bio = data['bio']
-        currentUser.profession = data['profession']
-        currentUser.instagram = data['instagram']
-        currentUser.facebook = data['facebook']
-        currentUser.github = data['github']
-        currentUser.twitter = data['twitter']
-        currentUser.website = data['website']
-        currentUser.theme = data['theme']
-        currentUser.theme_mode = data['theme_mode']
-        currentUser.genre = data['genre']
-
-        if data['avatarimg']:
-            currentUser.avatar = '/static/profile_pics/' + SaveImage(currentUser.id, 'profile')
-
-        if data['coverimg']:
-            currentUser.cover = '/static/profile_cover/' + SaveImage(currentUser.id, 'cover')
+            if key == "avatar":
+                setattr(currentUser, key, '/static/profile_pics/' + SaveImage(currentUser.id, 'profile'))
+            elif key == "cover":
+                setattr(currentUser, key, '/static/profile_cover/' + SaveImage(currentUser.id, 'cover'))
+            else:
+                setattr(currentUser, key, setting)
 
         currentUser.save()
 
-        token = jwt.encode({'id': currentUser.id,
-                            'perm_lvl': currentUser.role,
-                            'permissions': {
-                                'post_permission': currentUser.roleinfo.post_permission,
-                                'delete_post_permission': currentUser.roleinfo.delete_post_permission,
-                                'delete_reply_permission': currentUser.roleinfo.delete_reply_permission,
-                                'edit_post_permission': currentUser.roleinfo.edit_post_permission,
-                                'edit_reply_permission': currentUser.roleinfo.edit_reply_permission,
-                                'close_post_permission': currentUser.roleinfo.close_post_permission,
-                                'admin_panel_permission': currentUser.roleinfo.admin_panel_permission
-                            },
-                            'name': currentUser.name,
-                            'real_name': currentUser.real_name,
-                            'avatar': currentUser.avatar,
-                            'theme': currentUser.theme,
-                            'theme_mode': currentUser.theme_mode,
-                            'epx': str(dt.datetime.now() + dt.timedelta(minutes=60))}, config['JWT_KEY'])
+        if request.environ.get('HTTP_X_FORWARDED_FOR') is None:
+            userIP = request.environ['REMOTE_ADDR']
+        else:
+            userIP = request.environ['HTTP_X_FORWARDED_FOR']
+        
+        userIP = userIP.split(', ')[0]
+
+        token = generateUserToken(currentUser, userIP)
 
         return make_response(jsonify({'operation': 'success', 'token': token.decode('UTF-8')}), 200)
 

@@ -2,6 +2,7 @@
 import {instance} from '../../../modules/Requests.js';
 import OpenJoin from '../../../modules/OpenJoin.js';
 import {user as User, api as Api} from '../../../modules/Store';
+import {currentPage} from '../modules';
 
 export let user;
 
@@ -51,7 +52,11 @@ function Follow_User(id) {
   <div class="profile-actions">
     {#if $User.auth}
     {#if $User.id == user.id}
-    <a href="/user/settings"><button class="follow-user" id="settings-user-{user.id}">Settings</button></a>
+    {#if $currentPage == "settings"}
+    <button class="follow-user" id="settings-user-{user.id}" on:click={()=>{currentPage.set("main")}}>Profile</button>
+    {:else}
+    <button class="follow-user" id="settings-user-{user.id}" on:click={()=>{currentPage.set("settings")}}>Settings</button>
+    {/if}
     {:else}
     <button class="follow-user" bind:this={follow_button} on:click={()=>Follow_User(user.id)} id="follow-user-{user.id}">{#if user.info['following']}&#x2713 Following{:else}Follow{/if}</button>
     {/if}

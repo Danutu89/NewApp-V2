@@ -80,7 +80,7 @@ function Like_Post() {
         return;
     }
     likePostAnim();
-    instance.get('/api/like-post/' + article.id, {progress: false})
+    instance.get($Api['post.like'] + article.id, {progress: false})
         .then(response => {
             if(response.status != 200){
                 likePostAnim();
@@ -344,6 +344,10 @@ async function copyLink(){
     document.activeElement = null;
 }
 
+function updatePage(){
+    if(PR)
+        PR.prettyPrint();
+};
 
 onMount(async function(){
     document_ = document;
@@ -372,13 +376,9 @@ onMount(async function(){
         capture: true
     });
     overflow = document.querySelector("overflow");
+    document.addEventListener("urlPathUpdated", updatePage);
 
 })
-
-beforeUpdate(async()=>{
-    if(PR)
-        PR.prettyPrint();
-});
 
 </script>
 

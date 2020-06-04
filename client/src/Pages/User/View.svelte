@@ -2,10 +2,12 @@
 import SidebarLeft from './components/SidebarLeft.svelte';
 import SidebarRight from './components/SidebarRight.svelte';
 import Main from './components/Main.svelte';
+import Settings from './components/Settings.svelte';
 import LSidebarLeft from './components/Loading/SidebarLeft.svelte';
 import LSidebarRight from './components/Loading/SidebarRight.svelte';
 import LMain from './components/Loading/Main.svelte';
 import {lPage} from '../../modules/Preloads.js';
+import {currentPage} from './modules';
 
 export let async, data;
 </script>
@@ -61,7 +63,12 @@ export let async, data;
             {/if}
             <div class="profile-main">
                 <SidebarLeft user={data}/>
+                {#if $currentPage == "settings"}
+                <Settings user={data}/>
+                {:else}
                 <Main user={data}/>
+                {/if}
+                
                 <SidebarRight user={data}/>
             </div>
         {:catch error}
@@ -76,7 +83,11 @@ export let async, data;
         {/if}
         <div class="profile-main">
             <SidebarLeft user={data}/>
+            {#if $currentPage == "settings"}
+            <Settings user={data}/>
+            {:else}
             <Main user={data}/>
+            {/if}
             <SidebarRight user={data}/>
         </div>
     {/if}
