@@ -60,8 +60,6 @@ function LoadMore(){
         data = data;
     });
     isLoadMore = data['hasnext'];
-    loadPosts = null;
-    
 }
 
 function onScroll(e) {
