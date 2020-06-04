@@ -1,14 +1,13 @@
 <script>
 import {socket} from '../../../modules/SocketIO.js';
 import {onMount} from 'svelte';
-import {currentChat} from '../../../modules/Store';
+import {currentChat, deviceType as DeviceType} from '../../../modules/Store';
 
 export let chats;
-let isMobile;
 
 function gotoChat(chat){
     var directElement = document.querySelector("direct");
-    if(isMobile)
+    if(DeviceType == "mobile")
         directElement.style.transform = "translate3d(-100vw, 0px, 0px)";
     currentChat.set(chat);
     document.dispatchEvent(new CustomEvent("changedChat"));
@@ -16,7 +15,7 @@ function gotoChat(chat){
 }
 
 onMount(()=>{
-    isMobile = window.matchMedia("only screen and (max-width: 940px)").matches;
+    
 })
 
 </script>

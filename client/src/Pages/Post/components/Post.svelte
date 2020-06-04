@@ -7,7 +7,7 @@ import OpenJoin from '../../../modules/OpenJoin.js';
 import { host } from '../../../modules/Options.js';
 import {instance} from '../../../modules/Requests.js';
 import { swipeDirection } from '../../../modules/Swipe.js';
-import {user as User, api as Api} from '../../../modules/Store';
+import {user as User, api as Api, deviceType as DeviceType} from '../../../modules/Store';
 import TurndownService from 'turndown';
 import marked from 'marked';
 import { stores } from '@sapper/app';
@@ -172,16 +172,16 @@ function Comment(_reply_id,reply_author){
     }
     let reply = document.querySelector(".post-reply");
     if(reply.style["display"] === "none"){
-        if(isMobile){
+        if($DeviceType == "mobile"){
             reply.style["display"] = "block";
         }
         editor.codemirror.focus()
     }else{
-        if(isMobile){
+        if($DeviceType == "mobile"){
             reply.style["display"] = "none";
         }
     }
-    if(isMobile === false){
+    if($DeviceType == "mobile" === false){
         editor.codemirror.focus()
     }
     if (_reply_id != -1 && typeof(_reply_id) != "undefined"){
@@ -223,7 +223,7 @@ function Cancel_Reply(){
 function Edit_Reply(reply){
     editing_id = reply;
     editing = true;
-    if ( isMobile )
+    if ( $DeviceType == "mobile" )
         Comment();
     editor.value(turndown.turndown(reply.text_e));
     editor.codemirror.focus();
@@ -274,7 +274,7 @@ function onClickDocument(e){
         copyButton.innerHTML = copyButton.childNodes[0].outerHTML+' Copy Link';
         copyButton.childNodes[0].classList.remove("scale-anim");
     }
-    if(isMobile){
+    if($DeviceType == "mobile"){
         if(share_btn.contains(e.target)){
             if(options_list.classList.contains("toggled")){
                 if(options_list.classList.contains("share")){
@@ -355,10 +355,9 @@ onMount(async function(){
         webview = false;
     }
 
-    isMobile = window.matchMedia("only screen and (max-width: 940px)").matches;
     if(article.closed == false){
         let reply = document.querySelector(".post-reply");
-        if (isMobile === true){
+        if ($DeviceType == "mobile" === true){
             if(reply.style['display'] == 'none')
             reply.style["display"] = "none";
         }else{

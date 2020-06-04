@@ -13,6 +13,10 @@ let page_ = 1;
 let isLoadMore = true, CanLoad = false;
 let loadPosts;
 
+$: if(data){
+    isLoadMore = data['hasnext'];    
+}
+
 function SavePost(id){
     if ($User.auth == false){
         OpenJoin();
@@ -40,22 +44,24 @@ onDestroy(function(){
 
 function LoadMore(){
     page_++;
-    var args;
+    var args = "?";
+    var added = false;
     if(user){
-        args =  '?mode='+mode + "&user=" + user+'&page='+page_;
-    }else{
-        args =  '?mode='+mode+'&page='+page_;
+        args +=  'user=' + user;
+        added = true;
+    }else if (mode){
+        args +=  '&mode=' + mode;
+        added = true;
     }
+    args += added ? '&page='+page_ : 'page='+page_;
     loadPosts = instance.get($Api['home.index'] + args, { progress: false }).then(function (response) {
-        data = [...data , ...response.data['posts']];
+        data['list'] = [...data['list'] , ...response.data['posts']['list']];
+        data['hasnext'] = response.data['posts']['hasnext'];
         data = data;
-        if (response.data['hasnext']){
-            isLoadMore = true;
-        }
-        else{
-            isLoadMore = false;
-        }
     });
+    isLoadMore = data['hasnext'];
+    loadPosts = null;
+    
 }
 
 function onScroll(e) {
@@ -74,13 +80,15 @@ function onScroll(e) {
 </script>
 
 <div class="articles">
+    {#if  mode != "user"}
     <div class="navigation-menu">
         <a href="/"><button>Home</button></a>
         <a href="/questions"><button>Questions</button></a>
         <a href="/discuss"><button>Discuss</button></a>
         <a href="/tutorials"><button>Tutorials</button></a>
     </div>
-    {#each data as article}
+    {/if}
+    {#each data.list as article}
         <div class="article-card" id="post_{article.id}">
         {#if article.thumbnail}
         <div class="article-thumbnail" style="max-height:300px;overflow: hidden;">

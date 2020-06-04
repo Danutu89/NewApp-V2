@@ -23,6 +23,7 @@ def index(*args, **kwargs):
 
     mode = request.args.get('mode')
     search = request.args.get('search')
+    user = request.args.get('user')
 
     if kwargs['auth']:
         currentUser = UserModel.query.filter_by(id=kwargs['token']['id']).first_or_404()
@@ -58,6 +59,8 @@ def index(*args, **kwargs):
         query = query.filter(PostModel.id.in_(tgi))
     elif search:
         query = query.whoosh_search(request.args.get('search'))
+    elif user:
+        query = query.filter_by(user=user)
     else:
         if kwargs['auth']:
             if len(currentUser.int_tags) > 0:
@@ -108,16 +111,28 @@ def index(*args, **kwargs):
         posts_list.append(posts_json.copy())
         posts_json.clear()
 
-    home_json = {
-        'posts': posts_list,
-        'trending': GetTrending(),
-        'utilities': {
-                'tags': tags,
-                'search': search if search else None
+
+    if user or page:
+        home_json = {
+            'posts': {
+                'list': posts_list,
+                'hasnext': True if posts.has_next else False
             }
-        ,'user': {
-            'flw_tags': currentUser.int_tags if kwargs['auth'] else None
         }
-    }
+    else:
+        home_json = {
+            'posts': {
+                'list': posts_list,
+                'hasnext': True if posts.has_next else False
+            },
+            'trending': GetTrending(),
+            'utilities': {
+                    'tags': tags,
+                    'search': search if search else None
+                }
+            ,'user': {
+                'flw_tags': currentUser.int_tags if kwargs['auth'] else None
+            },
+        }
 
     return make_response(jsonify(home_json), 200)

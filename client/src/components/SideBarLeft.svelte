@@ -3,14 +3,13 @@ import {instance} from '../modules/Requests.js';
 import { onMount, onDestroy } from 'svelte';
 import OpenJoin from '../modules/OpenJoin.js';
 import { host } from '../modules/Options.js';
-import {user as User, api as Api} from '../modules/Store'
+import {user as User, api as Api, deviceType as DeviceType} from '../modules/Store'
 import { swipeDirection } from '../modules/Swipe.js';
 
 
 export let user;
 export let utilities;
 let tag_button = [];
-let isMobile;
 
 let top, height, winHeight;
 
@@ -47,27 +46,27 @@ function Follow_Tag(tag_) {
     })
 }
 
-function onScreenChange(){
-    isMobile = window.matchMedia("only screen and (max-width: 1260px)").matches;
-    if (isMobile === true){
+function updateView(){
+    if ($DeviceType == "tablet" || $DeviceType == "mobile"){
         document.getElementById("sidebar-left").classList.add('wrapper-left');
         document.getElementById("sidebar-left").classList.remove('sidebar');
     }else{
         document.getElementById("sidebar-left").classList.remove('wrapper-left');
         document.getElementById("sidebar-left").classList.add('sidebar');
+        document.getElementById("sidebar-left").style['transform'] = "";
     }
 }
 
 onMount(async function(){
-    isMobile = window.matchMedia("only screen and (max-width: 1260px)").matches;
-    window.addEventListener('resize', onScreenChange);
     window_ = window;
-    if (isMobile === true){
+    document.addEventListener('changedDeviceType', updateView)
+    if ($DeviceType == "tablet" || $DeviceType == "mobile"){
         document.getElementById("sidebar-left").classList.add('wrapper-left');
         document.getElementById("sidebar-left").classList.remove('sidebar');
     }else{
         document.getElementById("sidebar-left").classList.remove('wrapper-left');
         document.getElementById("sidebar-left").classList.add('sidebar');
+        document.getElementById("sidebar-left").style['transform'] = "";
     }
     top = document.getElementById("sidebar-left").offsetTop;
     height = document.getElementById("sidebar-left").offsetHeight;
@@ -77,7 +76,7 @@ onMount(async function(){
 
 onDestroy(function(){
     if(document_ && window_){
-        window_.removeEventListener('resize', onScreenChange);
+        document_.removeEventListener('changedDeviceType', updateView);
     }
 })
 

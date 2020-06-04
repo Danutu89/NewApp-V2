@@ -9,7 +9,7 @@ import json
 users = Blueprint('users', __name__, url_prefix='/api/v2/users')
 
 
-@users.route("/user/<string:name>")
+@users.route("/<string:name>")
 @AuthOptional
 def user(name, *args, **kwargs):
     user = UserModel.query.filter_by(name=name).first_or_404()
@@ -53,7 +53,10 @@ def user(name, *args, **kwargs):
     user_json['post_count'] = PostModel.query.filter_by(user=user.id).filter_by(approved=True).count()
     user_json['reply_count'] = ReplyModel.query.filter_by(user=user.id).count()
     user_json['post_views'] = 53
-    user_json['posts'] = sorted(posts_user_list, key=lambda i: i['id'], reverse=True)
+    user_json['posts'] = {
+        'list': sorted(posts_user_list, key=lambda i: i['id'], reverse=True),
+        'hasnext': True if posts.has_next else False
+    }
     user_json['follow_check'] = True if len(user.followed) > 0 else False
 
     if user.facebook or user.twitter or user.github or user.instagram or user.website:

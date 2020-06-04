@@ -8,7 +8,7 @@ const { page } = stores();
 export let data;
 let async = undefined, posts = undefined;
 
-onMount(async ()=>{
+function LoadData(){
     if($isSSR) {
         isSSR.set(false);
     } else if(data instanceof Promise) {
@@ -23,8 +23,16 @@ onMount(async ()=>{
         }
         async = posts();
     }
-})
-</script>
+}
 
+onMount(async ()=>{
+    LoadData();
+    document.addEventListener("urlPathUpdated", PageUpdated);
+})
+
+function PageUpdated(e){
+    LoadData();
+}
+</script>
 
 <View data={data} async={async}/>

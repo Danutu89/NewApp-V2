@@ -44,7 +44,7 @@ function Follow_User(id) {
     </div>
 
     <div class="user-name" style="line-height: 1.7rem;">
-      <h1 style="font-weight: 400;text-align: initial;">{user.real_name}</h1>
+      <h1 style="font-weight: 400;">{user.real_name}</h1>
       <h4 style="font-weight: 400;">@{user.name}</h4>
     </div>
   </div>

@@ -2,7 +2,7 @@
 import Login from './Login.svelte';
 import Register from './Register.svelte';
 import Auth from '../modules/Auth';
-import {user as User, api as Api} from '../modules/Store'
+import {user as User, api as Api, deviceType as DeviceType} from '../modules/Store'
 import { onMount } from 'svelte';
 import { stores, goto } from '@sapper/app';
 import { host } from '../modules/Options.js';
@@ -21,7 +21,6 @@ let notificationListener;
 let l_modal, r_modal, j_modal,l_modal_in, r_modal_in, j_modal_in, user = null, user_center = null, user_image = null, overflow = null, search = "";
 var menu_open = false;
 let notifications,notifications_c,notifications_center_c,notification_list;
-let isMobile;
 let toggle;
 let p_image, l_image;
 
@@ -42,13 +41,13 @@ function onClickDocument(e){
   if(!user || !user_center || !user_image || !overflow)
     return;
   
-  if((!notification_list || !notifications || !notifications_c || !notifications_center_c) && isMobile == false)
+  if((!notification_list || !notifications || !notifications_c || !notifications_center_c) && $DeviceType != "mobile")
     return;
 
   if($User.auth){
     if(!user_image.contains(e.target) && !user_center.contains(e.target)){
 
-      if(isMobile == false){
+      if($DeviceType != "mobile"){
         if(notifications_c.contains(e.target)){
           user.style["display"] = "none";
         }else if(user.style["display"] == "block"){
@@ -68,7 +67,7 @@ function onClickDocument(e){
         overflow.classList.remove("show");
       }
     }
-    if(isMobile == false){
+    if($DeviceType != "mobile"){
       if(!notifications_c.contains(e.target) && !notifications_center_c.contains(e.target)){
         if(user_image.contains(e.target)){
           notifications_center_c.style["display"] = "none";
@@ -121,8 +120,17 @@ function fetchNotificationsInterval(){
   },3000);
 }
 
+function checkDevice(){
+  if($DeviceType == "mobile"){
+    p_image = "35px";
+    l_image = "30";
+  }else{
+    p_image = "30px";
+    l_image = "25";
+  }
+}
+
 onMount(async function(){
-  isMobile = window.matchMedia("only screen and (max-width: 940px)").matches;
   l_modal = document.getElementById("login-modal");
   r_modal = document.getElementById("register-modal");
   j_modal = document.getElementById("join-modal");
@@ -130,6 +138,8 @@ onMount(async function(){
   r_modal_in = document.getElementById("register-modal-inner");
   j_modal_in = document.getElementById("join-modal-inner");
   overflow = document.querySelector("overflow");
+  document.addEventListener("changedDeviceType", checkDevice);
+  checkDevice();
   document.addEventListener('click', onClickDocument, {
     capture: true
   });
@@ -145,13 +155,6 @@ onMount(async function(){
   }*/
   if($User.theme == 'Dark'){
     toggle.classList.add('active');
-  }
-  if(isMobile){
-    p_image = "35px";
-    l_image = "30";
-  }else{
-    p_image = "30px";
-    l_image = "25";
   }
 });
 
@@ -237,7 +240,7 @@ function goHome(){
   </div>
   <div style="margin-inline-start: auto;display:flex;">
   {#if $User.auth == true}
-    {#if isMobile == false}
+    {#if $DeviceType == "mobile"}
      <div bind:this={notifications_c} class="navbar-item">
        <div class="newapp-dropdown" id="notification-center" style="cursor: pointer;">
          <i class="na-bell"></i>
@@ -305,7 +308,7 @@ function goHome(){
                   <i class="na-chevron-right"></i>
                 </div>
                 </a>
-                {#if isMobile == true}
+                {#if $DeviceType == "mobile"}
                 <a href="/notifications" style="color: var(--navbar-color);">
                 <div class="dropdown-item" on:click={CloseMenu}>
                   <i class="na-bell"></i> 

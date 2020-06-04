@@ -14,6 +14,7 @@ import { alert } from '../modules/Alert.js';
 import { lPage } from '../modules/Preloads.js';
 import { swipeDirection } from '../modules/Swipe.js';
 import Swipe from '../components/Controllers/Swipe.svelte';
+import Screen from '../components/Controllers/Screen.svelte';
 import {socket} from '../modules/SocketIO.js';
 import {user as User, api as Api} from '../modules/Store';
 import {setApiUrls} from '../modules/Api';
@@ -205,3 +206,4 @@ beforeUpdate(async function(){
 {/if}
 
 <Swipe/>
+<Screen/>

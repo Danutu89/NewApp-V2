@@ -42,7 +42,7 @@ JWTManager(app)
 
 app.secret_key = key_c
 app.config['SESSION_TYPE'] = 'redis'
-app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://danutu:468255@localhost/newapp?client_encoding=utf8"
+app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql:///newapp?client_encoding=utf8"
 #danutu:468255@localhost
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 app.config['WHOOSH_BASE'] = 'whoosh'

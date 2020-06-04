@@ -2,15 +2,16 @@
 import { onMount, beforeUpdate } from 'svelte';
 import { lPage } from '../../modules/Preloads.js';
 
+
 let swipeDir = "none";
 let elementSwiped = "none";
 let touchStart, touchCurrent, touchEnd;
 let touchStartFixed;
 let touchLive = [];
 let touchPosStart;
-let swipeThreshold = 4;
+let swipeThreshold = 20;
 let touchThreshold = 10;
-let touchDistance = 5;
+let touchDistance = 10;
 let change, changeFixed;
 let elementOpened = "none";
 
@@ -64,22 +65,25 @@ function swipeMove(e){
     change = {x: (touchStart.x - touchCurrent.x)*-1, y: (touchStart.y - touchCurrent.y)*-1};
     changeFixed = {x: (touchStartFixed.x - touchCurrent.x)*-1, y: (touchStartFixed.y - touchCurrent.y)*-1};
 
-    if(touchLive.length < 5){
-        //swipeDir = "none";
-        touchLive.push({x: touchCurrent.x, y: touchCurrent.y, swipeDir: swipeDir});
+    if(touchLive.length < 8){
+        touchLive.unshift({x: touchCurrent.x, y: touchCurrent.y, swipeDir: swipeDir});
         return;
-    }
+    }else if(touchLive.length > 25)
+        touchLive.pop()
 
+    touchLive.unshift({x: touchCurrent.x, y: touchCurrent.y, swipeDir: swipeDir});
+    
     var touchIndex = touchLive.length - touchDistance;
 
-    if (Math.abs(touchCurrent.x - touchLive[touchIndex].x) > swipeThreshold && Math.abs(touchCurrent.y - touchLive[touchIndex].y) < swipeThreshold){
-        if(touchCurrent.x - touchLive[touchIndex].x < 0){
+
+    if (Math.abs(touchCurrent.x - touchStartFixed.x) > 20 && Math.abs(touchCurrent.y - touchLive[touchLive.length-5].y) < swipeThreshold){
+        if(touchCurrent.x - touchStartFixed.x < 0){
             swipeDir = "left";
         }else{
             swipeDir = "right";
         }
-    }else if(Math.abs(touchCurrent.y - touchLive[touchIndex].y) > swipeThreshold && Math.abs(touchCurrent.x - touchLive[touchIndex].x) < swipeThreshold){
-        if(touchCurrent.y - touchLive[touchIndex].y < 0){
+    }else if(Math.abs(touchCurrent.y - touchStartFixed.y) > 20 && Math.abs(touchCurrent.x - touchLive[touchLive.length-2].x) < swipeThreshold){
+        if(touchCurrent.y - touchStartFixed.y < 0){
             swipeDir = "up";
         }else{
             swipeDir = "down";
@@ -95,12 +99,14 @@ function swipeMove(e){
     }else{
         touchLive.push({x: touchCurrent.x, y: touchCurrent.y, swipeDir: swipeDir});
     }
-
-    if(swipeDir == "right" && touchPosStart.x < window.innerWidth/4 || swipeDir == "left" && elementOpened == "wrapper"){
+    
+    if(swipeDir == "right" && touchPosStart.x < window.innerWidth/4 || (swipeDir == "left" && elementOpened == "wrapper")){
         if(sidebar != null && (elementSwiped == "wrapper" || elementSwiped == "none") && (elementOpened == "wrapper" || elementOpened == "none")){
             elementSwiped = "wrapper";
             elementOpened = "wrapper";
             dragWrapper(e);
+            
+            
         }
     }else if(swipeDir == "left"){
         
@@ -113,9 +119,6 @@ function swipeMove(e){
     }else{
         elementSwiped = "none";
     }
-    
-    //console.log(touchStart);
-    //console.log(swipeDir, touchLive);
     
 }
 
@@ -140,10 +143,12 @@ async function swipeEnd(e){
                 sidebar.style.transform = "translate3d(-290px, 0px, 0px)";
                 elementOpened = "none";
                 overflow.classList.remove("show");
+                document.body.style.overflow = 'visible';
             }else{
                 sidebar.style.transform = "translate3d(-20px, 0px, 0px)";
                 elementOpened = "wrapper";
                 overflow.classList.add("show");
+                document.body.style.overflow = 'hidden';
             }
         }
     }
@@ -151,7 +156,7 @@ async function swipeEnd(e){
     if(elementOpened != "wrapper")
         document.body.style.overflow = 'visible';
 
-    if(reload != null && !isTouch){
+    if(reload != null && !isTouch  && elementSwiped == "reload" || elementOpened == "reload"){
         reload.style.transition = "";
 
         if(changeFixed.y > 100){
@@ -174,9 +179,6 @@ async function swipeEnd(e){
         }
     }
 
-    //console.log(change)
-    //console.log(swipeDir, elementSwiped);
-    //console.log(isTouch);
     touchLive = [];
     swipeDir = "none";
     elementSwiped = "none";
@@ -252,9 +254,9 @@ async function resetLoader(){
         reload.children[0].style["animation"] = "";
         elementOpened = "none";
 	},400)
-}
+};
 
-beforeUpdate(()=>{
+function updateElements(){
     overflow = document.querySelector("overflow");
 
     //wrapper req
@@ -263,13 +265,17 @@ beforeUpdate(()=>{
 
     //reload req
     reload = document.querySelector("reload");
+    console.log(sidebar);
+    
 
-})
+}
 
 onMount(()=>{
+
     document.addEventListener("touchstart", swipeStart);
     document.addEventListener("touchmove", swipeMove);
     document.addEventListener("touchend", swipeEnd);
+    document.addEventListener("urlPathUpdated", updateElements);
 
     document.addEventListener('reloaded', resetLoader);
 
