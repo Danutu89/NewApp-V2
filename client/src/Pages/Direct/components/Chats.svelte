@@ -7,15 +7,28 @@ export let chats;
 
 function gotoChat(chat){
     var directElement = document.querySelector("direct");
-    if(DeviceType == "mobile")
+    if($DeviceType == "mobile")
         directElement.style.transform = "translate3d(-100vw, 0px, 0px)";
     currentChat.set(chat);
     document.dispatchEvent(new CustomEvent("changedChat"));
     
 }
 
-onMount(()=>{
+function checkScreen(){
+    var directElement = document.querySelector("direct");
+    if($DeviceType != "mobile")
+        if(directElement.style.transform)
+            directElement.style.transform = "";
     
+    else if($currentChat.id){  
+        if($DeviceType == "mobile")
+            directElement.style.transform = "translate3d(-100vw, 0px, 0px)";
+    }
+}
+
+onMount(()=>{
+    document.addEventListener("changedDeviceType", checkScreen)
+    checkScreen();
 })
 
 </script>

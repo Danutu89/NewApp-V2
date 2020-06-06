@@ -1,6 +1,6 @@
 from flask import Blueprint, make_response, jsonify, request
 from .modules.utilities import AuthOptional, AuthRequired, GetItemForKeyN
-from sqlalchemy import desc, func, or_, asc
+from sqlalchemy import desc, func, or_, asc, and_
 from sqlalchemy.schema import Sequence
 import datetime as dt
 from app import db, socket
@@ -15,41 +15,7 @@ direct = Blueprint('direct', __name__, url_prefix='/api/v2/users/direct')
 def index(*args, **kwargs):
     currentUser = UserModel.query.filter_by(id=kwargs['token']['id']).first()
 
-    if request.method == 'GET':
-
-        conv = ConversationModel.query.filter(ConversationModel.members.contains([currentUser.id])).all()
-
-        conv_json = {'conversations': []}
-
-        for c in conv:
-
-            members = [x for i,x in enumerate(c.members) if x!=currentUser.id]
-            users = UserModel.query.filter(UserModel.id.in_(members)).all()
-            members_json = []
-            last_text = ""
-
-            for m in users:
-                members_json.append({
-                    'name': m.name,
-                    'real_name': m.real_name,
-                    'avatar': m.avatar,
-                })
-
-            if c.last_message is not None:
-                last_text = c.last_message.message
-
-            conv_json['conversations'].append({
-                'room': 'direct-'+str(c.id),
-                'id': c.id,
-                'members': members_json,
-                'last_message': {
-                    'on': c.last_message_on,
-                    'text': last_text,
-                    'seen': c.seen
-                }
-            })
-
-        return make_response(jsonify(conv_json), 200)
+    current_conv = {}
 
     if request.method == 'POST':
         
@@ -59,22 +25,94 @@ def index(*args, **kwargs):
             return make_response(jsonify({'operation': 'error', 'error': 'Missing data'}), 401)
 
 
-        users = UserModel.query.with_entities(UserModel.id).filter(UserModel.name.in_(data['users'])).all()
-        users = list(sum(users, ())) 
-        users.append(currentUser.id)
+        user_chats = ConversationModel.query.with_entities(ConversationModel.id).filter(ConversationModel.members.contains([data['ids']])).all()
+        user_chats = list(sum(user_chats, ()))
 
-        new_conv = ConversationModel(
-            id = None,
-            members = users,
-            seen = True,
-            last_message_on = None,
-            last_message_id = None
-        )
+        currentUser_chats = ConversationModel.query.with_entities(ConversationModel.id).filter(ConversationModel.members.contains([data['ids']])).all()
 
-        db.session.add(new_conv)
-        db.session.commit()
+        currentUser_chats = set(sum(currentUser_chats, ()))
+        
+        currentUser_chats.intersection(user_chats)
+        currentUser_chats = list(currentUser_chats)
 
-        return make_response(jsonify({'operation': 'success'}), 200)
+        if len(currentUser_chats) > 0:
+            conv = ConversationModel.query.filter(ConversationModel.id.in_(currentUser_chats)).filter(func.length(ConversationModel.members) < 3).first()
+        else:
+            users = UserModel.query.with_entities(UserModel.id).filter(UserModel.name.in_([data['users']])).all()
+
+            users = list(sum(users, ())) 
+            users.append(currentUser.id)
+
+            conv = ConversationModel(
+                id = None,
+                members = users,
+                seen = True,
+                last_message_on = None,
+                last_message_id = None
+            )
+
+            conv.add()
+
+        members = [x for i,x in enumerate(conv.members) if x!=currentUser.id]
+        users = UserModel.query.filter(UserModel.id.in_(members)).all()
+        members_json = []
+        last_text = ""
+
+        for m in users:
+            members_json.append({
+                'name': m.name,
+                'real_name': m.real_name,
+                'avatar': m.avatar,
+            })
+
+        if conv.last_message is not None:
+            last_text = conv.last_message.message
+
+        current_conv = {
+            'room': 'direct-'+str(conv.id),
+            'id': conv.id,
+            'members': members_json,
+            'last_message': {
+                'on': conv.last_message_on,
+                'text': last_text,
+                'seen': conv.seen
+            }
+        }
+
+    conv_json = {'conversations': [], 'current': current_conv.copy()}
+
+    conv = ConversationModel.query.filter(ConversationModel.members.contains([currentUser.id])).all()
+
+    for c in conv:
+
+        members = [x for i,x in enumerate(c.members) if x!=currentUser.id]
+        users = UserModel.query.filter(UserModel.id.in_(members)).all()
+        members_json = []
+        last_text = ""
+
+        for m in users:
+            members_json.append({
+                'name': m.name,
+                'real_name': m.real_name,
+                'avatar': m.avatar,
+            })
+
+        if c.last_message is not None:
+            last_text = c.last_message.message
+
+        conv_json['conversations'].append({
+            'room': 'direct-'+str(c.id),
+            'id': c.id,
+            'members': members_json,
+            'last_message': {
+                'on': c.last_message_on,
+                'text': last_text,
+                'seen': c.seen
+            }
+        })
+
+
+    return make_response(jsonify(conv_json), 200)
 
 
 @direct.route("/chat/<int:id>")

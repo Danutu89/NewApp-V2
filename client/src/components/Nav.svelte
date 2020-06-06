@@ -47,10 +47,11 @@ function onClickDocument(e){
   if($User.auth){
     if(!user_image.contains(e.target) && !user_center.contains(e.target)){
         
-        
-        if(notifications_c.contains(e.target)){
-          user.style["display"] = "none";
-        }else if(user.style["display"] == "block"){
+        if($DeviceType != "mobile")
+          if(notifications_c.contains(e.target)){
+            user.style["display"] = "none";
+          }
+        if(user.style["display"] == "block"){
           user.style["display"] = "none";
           overflow.classList.remove("show");
         }

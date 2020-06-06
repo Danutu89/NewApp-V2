@@ -519,8 +519,10 @@ content direct .conversation .message button:focus {
 	content direct {
 		height: calc(100vh - 4.5rem);
 	}
+}
 
-	content direct .conversation {
+@media screen and (max-width: 1260px){
+	content dircet .conversation {
 		width: calc(100% - 320px);
 	}
 }
@@ -1824,10 +1826,6 @@ content .articles .navigation-menu a button:focus {
 		padding: 0rem 0.5rem;
 		width: calc(100% - 1rem);
 	}
-
-	content .articles{
-		margin-top: 40px;
-	}
 }
 
 @media screen and (max-width: 940px) {	
@@ -1837,6 +1835,10 @@ content .articles .navigation-menu a button:focus {
 
 	content {
 		min-height: calc(100vh - 4.5rem);
+	}
+
+	content .articles{
+		margin-top: 40px;
 	}
 
 	.newapp-navbar {

@@ -27,6 +27,7 @@ onMount(()=>{
         deviceType.set("tablet");
     else
         deviceType.set("desktop");
+    document.dispatchEvent(new CustomEvent("changedDeviceType"));
 })
 
 </script>

@@ -34,6 +34,7 @@ function getTranslate3d (el) {
 
 
 function swipeStart(e){
+    updateElements();
     if(typeof(e.targetTouches[0]) == "undefined"){
         touchStart = {x: e.clientX, y: e.clientY};
         touchPosStart = {x: e.clientX, y: e.clientY};

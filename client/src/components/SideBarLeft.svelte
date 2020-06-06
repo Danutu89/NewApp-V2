@@ -60,14 +60,6 @@ function updateView(){
 onMount(async function(){
     window_ = window;
     document.addEventListener('changedDeviceType', updateView)
-    if ($DeviceType == "tablet" || $DeviceType == "mobile"){
-        document.getElementById("sidebar-left").classList.add('wrapper-left');
-        document.getElementById("sidebar-left").classList.remove('sidebar');
-    }else{
-        document.getElementById("sidebar-left").classList.remove('wrapper-left');
-        document.getElementById("sidebar-left").classList.add('sidebar');
-        document.getElementById("sidebar-left").style['transform'] = "";
-    }
     top = document.getElementById("sidebar-left").offsetTop;
     height = document.getElementById("sidebar-left").offsetHeight;
     winHeight = window.innerHeight;
@@ -82,7 +74,7 @@ onDestroy(function(){
 
 </script>
 
-<div class="sidebar" id="sidebar-left">
+<div class="{$DeviceType != 'desktop' ? 'wrapper-left' : 'sidebar'}" id="sidebar-left">
 <div class="widget" id="pwa">
     <div class="widget-list">
         <div class="widget-item" style="display: flex;">
