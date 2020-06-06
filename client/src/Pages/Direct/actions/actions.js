@@ -24,7 +24,7 @@ async function SendMessage(messages, text){
         },
         room: get(currentChat).room,
         id: get(currentChat).id,
-        last_date: messages[messages.length -1].datetime
+        last_date: messages.length > 0 ? messages[messages.length -1].datetime : null
     })
 }
 

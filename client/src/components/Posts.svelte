@@ -22,7 +22,7 @@ function SavePost(id){
         OpenJoin();
         return;
     }
-    instance.get($Api['posts.save'] + id, { progress: false }).then(response=>{
+    instance.get($Api['post.save'] + id, { progress: false }).then(response=>{
         if(response.data['operation'] == 'saved'){
             save_button[id].innerHTML = 'Saved';
         }else if(response.data['operation'] == 'deleted'){

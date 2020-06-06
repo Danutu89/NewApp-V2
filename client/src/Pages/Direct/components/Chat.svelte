@@ -4,7 +4,7 @@ import {instance} from '../../../modules/Requests.js';
 import {socket} from '../../../modules/SocketIO.js';
 import {user as User, currentChat, deviceType as DeviceType} from '../../../modules/Store';
 import {loadChat, SendMessage} from '../actions/actions.js';
-let messages;
+let messages = [];
 let text;
 let _document;
 
@@ -25,6 +25,7 @@ function goBack(){
 onMount(async ()=>{
     socket.on("connect", function() {
         socket.on("get_message", function(data){
+            
             var mine;
 
             if(data.author.name == $User.name){
@@ -43,22 +44,13 @@ onMount(async ()=>{
             messages = [...messages, message];
         })
     });
+    console.log(1);
+    
     _document = document;
     document.addEventListener('changedChat', async()=>{messages= await loadChat()});
-
-    loadChat();
-    if ($currentChat.id){
-        
-    }
-
 });
 
 onDestroy(async()=>{
-    if($currentChat)
-        socket.emit("leave_room", {
-            room: $currentChat.room
-        });
-        //currentChat.reset();
     if(_document){
         _document.removeEventListener('changedChat', async()=>{messages = await loadChat()});
     }
