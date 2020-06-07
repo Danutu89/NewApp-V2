@@ -32,5 +32,5 @@ export default function confirmUser(data){
 
     cookies.set('token', user.token, {maxAge:60 * 60 * 24 * 30, path: '/'});
     activateAlert( "/static/logo.svg", "User", "Account activated.", '');
-    location.reload();
+    window.location.href = '/';
 }
