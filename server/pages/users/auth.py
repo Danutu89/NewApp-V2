@@ -150,7 +150,7 @@ def confirm():
     user = UserModel.query.filter_by(email=data['email']).first()
     user.activated = True
 
-    UserModel.save()
+    db.session.commit()
 
     if request.environ.get('HTTP_X_FORWARDED_FOR') is None:
         userIP = request.environ['REMOTE_ADDR']
