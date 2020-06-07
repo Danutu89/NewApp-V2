@@ -12,7 +12,7 @@ let l_modal;
 let r_modal;
 
 async function CheckUsername(){
-    const res = await instance.get($Api['auth.username']+username, { progress: false }).then(function (response) {
+    const res = await instance.get($Api['auth.check_username']+username, { progress: false }).then(function (response) {
             return response.data;
         });
     const json = await res;
