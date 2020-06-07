@@ -32,7 +32,7 @@ def tag(tag, *args, **kwargs):
 
     return make_response(response, 200)
 
-@follow.route("/user/<string:id>")
+@follow.route("/user/<int:id>")
 @AuthRequired
 def user(id, *args, **kwargs):
     user = UserModel.query.filter_by(id=kwargs['token']['id']).first_or_404()
