@@ -147,7 +147,7 @@ def confirm():
     except BadSignature:
         return jsonify({'confirm': 'Invalid Token'}), 401
 
-    user = UserModel.filter_by(email=data['email']).first()
+    user = UserModel.query.filter_by(email=data['email']).first()
     user.activated = True
 
     UserModel.save()
