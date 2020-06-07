@@ -23,29 +23,25 @@ function goBack(){
 }
 
 onMount(async ()=>{
-    socket.on("connect", function() {
-        socket.on("get_message", function(data){
-            
-            var mine;
+    socket.on("get_message", function(data){
+        
+        var mine;
 
-            if(data.author.name == $User.name){
-                mine = true;
-            }else{
-                mine = false;
-            }
+        if(data.author.name == $User.name){
+            mine = true;
+        }else{
+            mine = false;
+        }
 
-            var message = {
-                mine: mine,
-                created_on: data.created_on,
-                author: data.author,
-                text: data.text
-            }
+        var message = {
+            mine: mine,
+            created_on: data.created_on,
+            author: data.author,
+            text: data.text
+        }
 
-            messages = [...messages, message];
-        })
-    });
-    console.log(1);
-    
+        messages = [...messages, message];
+    })
     _document = document;
     document.addEventListener('changedChat', async()=>{messages= await loadChat()});
 });

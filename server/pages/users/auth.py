@@ -106,7 +106,7 @@ def register():
         userLanguage = result_2['languages'][0]['iso639_1']
 
     msg = Message('Confirm Email Registration', sender='contact@newapp.nl', recipients=[data['email']])
-    link = 'https://new-app.dev/user/confirm?email={}&token={}'.format(data['email'], token)
+    link = 'https://new-app.dev/?email={}&token={}'.format(data['email'], token)
     msg.html = render_template('email_register.html', register=link, email='contact@newapp.nl')
     mail.send(msg)
 
@@ -129,10 +129,13 @@ def register():
 
     return make_response(jsonify({'register': 'success'}), 200)
 
-@auth.route('/register/confirm', methods=['GET'])
+@auth.route('/register/confirm', methods=['POST'])
 def confirm():
+
+    data = request.json
+
     try:
-        email_token = serializer.loads(request.args.get('token'), salt='register-confirm', max_age=300)
+        email_token = serializer.loads(data['token'], salt='register-confirm', max_age=300)
     except SignatureExpired:
         return jsonify({'confirm': 'Invalid Token'}), 401
     except BadTimeSignature:
@@ -140,7 +143,7 @@ def confirm():
     except BadSignature:
         return jsonify({'confirm': 'Invalid Token'}), 401
 
-    user = UserModel.filter_by(email=request.args.get('email')).first()
+    user = UserModel.filter_by(email=data['email']).first()
     user.activated = True
 
     UserModel.save()

@@ -17,6 +17,7 @@ import Swipe from '../components/Controllers/Swipe.svelte';
 import Screen from '../components/Controllers/Screen.svelte';
 import {socket} from '../modules/SocketIO.js';
 import {user as User, api as Api} from '../modules/Store';
+import {confirmUser} from '../modules/Auth';
 import {setApiUrls} from '../modules/Api';
 import Cookie from 'cookie-universal';
 const cookies = Cookie();
@@ -118,6 +119,8 @@ function updatePage(){
 }
 
 onMount(async function() {
+	if($page.query.email && $page.query.token)
+		confirmUser({email: $page.query.email, token:$page.query.token});
 	setApiUrls();
 	reloadHeight = getComputedStyle(reload).height;
 	document.addEventListener('reloaded', resetLoader);

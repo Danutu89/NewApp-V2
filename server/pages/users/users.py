@@ -93,7 +93,7 @@ def user(name, *args, **kwargs):
     return make_response(jsonify(user_json), 200)
 
 
-@users.route('/settings', methods=['GET', 'POST'])
+@users.route('/<string:name>/settings', methods=['GET', 'POST'])
 @AuthRequired
 def settings(*args, **kwargs):
 
