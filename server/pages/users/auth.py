@@ -82,28 +82,32 @@ def register():
 
     ip_user = Ip_Coordinates.query.filter_by(ip=userIP).first()
 
-    if ip_user is None:
-        resp = requests.get(
-            ('https://www.iplocate.io/api/lookup/{}').format(userIP))
-        userLoc = resp.json()
-        iso_code = userLoc['country_code']
-        country_name = userLoc['country']
-        rest = False
-    else:
-        resp = requests.get(
-            ("https://restcountries.eu/rest/v2/alpha/{}").format(ip_user.location.iso_code))
-        userLoc = resp.json()
-        country_name = userLoc['name']
-        iso_code = ip_user.location.iso_code
-        rest = True
+    try:
 
-    if rest:
-        userLanguage = userLoc['languages'][0]['iso639_1']
-    else:
-        api_2 = requests.get(
-            ("https://restcountries.eu/rest/v2/alpha/{}").format(iso_code))
-        result_2 = api_2.json()
-        userLanguage = result_2['languages'][0]['iso639_1']
+        if ip_user is None:
+            resp = requests.get(
+                ('https://www.iplocate.io/api/lookup/{}').format(userIP))
+            userLoc = resp.json()
+            iso_code = userLoc['country_code']
+            country_name = userLoc['country']
+            rest = False
+        else:
+            resp = requests.get(
+                ("https://restcountries.eu/rest/v2/alpha/{}").format(ip_user.location.iso_code))
+            userLoc = resp.json()
+            country_name = userLoc['name']
+            iso_code = ip_user.location.iso_code
+            rest = True
+
+        if rest:
+            userLanguage = userLoc['languages'][0]['iso639_1']
+        else:
+            api_2 = requests.get(
+                ("https://restcountries.eu/rest/v2/alpha/{}").format(iso_code))
+            result_2 = api_2.json()
+            userLanguage = result_2['languages'][0]['iso639_1']
+    except:
+        pass
 
     msg = Message('Confirm Email Registration', sender='contact@newapp.nl', recipients=[data['email']])
     link = 'https://new-app.dev/?email={}&token={}'.format(data['email'], token)
@@ -119,8 +123,6 @@ def register():
         activated=False,
         ip_address=userIP,
         browser=userInfo['browser']['name'],
-        country_name=country_name,
-        country_flag=str(iso_code).lower(),
         lang=str(userLanguage).lower(),
         theme='Light',
         theme_mode='system'
