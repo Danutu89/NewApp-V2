@@ -24,7 +24,7 @@ def AuthRequired(f):
             decoded = jwt.decode(token_header, config['JWT_KEY'])
             kwargs['token'] = decoded
         except Exception as e:
-            make_response(jsonify({'auth': 'Invalid token.'}), 401)
+            return make_response(jsonify({'auth': 'Invalid token.'}), 401)
         return f(*args, **kwargs)
     return decorated
 
