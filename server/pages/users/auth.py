@@ -123,7 +123,9 @@ def register():
         activated=False,
         ip_address=userIP,
         browser=userInfo['browser']['name'],
-        lang=str(userLanguage).lower(),
+        #country_name=country_name,
+        #country_flag=str(iso_code).lower(),
+        lang='ro',
         theme='Light',
         theme_mode='system'
     )
