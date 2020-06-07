@@ -1,6 +1,6 @@
 from flask import Blueprint, make_response, jsonify, request, render_template
 import datetime as dt
-from app import config, bcrypt, serializer, BadSignature, BadTimeSignature, SignatureExpired, mail
+from app import config, bcrypt, serializer, BadSignature, BadTimeSignature, SignatureExpired, mail, db
 import os
 import jwt
 from models import UserModel, Ip_Coordinates
