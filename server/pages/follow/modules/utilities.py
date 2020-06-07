@@ -4,7 +4,7 @@ import jwt
 import os
 import datetime as dt
 from sqlalchemy import desc, func, or_, asc
-import config from app
+from app import config
 
 from models import Analyze_Pages, TagModel, PostModel
 
