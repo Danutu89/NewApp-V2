@@ -102,3 +102,10 @@ def generateUserToken(user, userIP):
         }, config['JWT_KEY'])
 
     return token
+
+def dict_from_class(cls):
+    return dict(
+        (key, value)
+        for (key, value) in cls.__dict__.items()
+        if key[:1] != '_'
+    )

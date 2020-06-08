@@ -26,7 +26,7 @@ export const api = writable({
     "replies.edit": "/api/v2/replies/edit",
     "replies.new": "/api/v2/replies/newreply",
     "static": "/static/",
-    "users.settings": "/api/v2/users/settings",
+    "users.settings": "/api/v2/users/settings/",
     "users.user": "/api/v2/users/"
 });
 

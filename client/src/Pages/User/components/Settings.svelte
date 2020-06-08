@@ -1,6 +1,8 @@
 <script>
+import Select from 'svelte-select';
 import {instance} from '../../../modules/Requests.js';
 import {user as User, api as Api} from '../../../modules/Store';
+import {getSettings} from '../modules/settings.js';
 import { onMount } from 'svelte';
 import Cookie from 'cookie-universal';
 const cookies = Cookie();
@@ -26,6 +28,7 @@ let s_genre=user.genre,
 let s_avatarimg, s_coverimg;
 let c_coverimg,c_avatarimg;
 let isMobile;
+let settings;
 
 function SwitchPanel(panel){
     if (panel === 'misc'){
@@ -120,6 +123,9 @@ async function SaveSettings(){
 }
 
 onMount(async function(){
+  settings = await getSettings();
+  console.log(settings);
+  
   isMobile = window.matchMedia("only screen and (max-width: 800px)").matches;
   s_coverimg = document.getElementById('coverimg');
   s_avatarimg = document.getElementById('avatarimg');
@@ -140,88 +146,45 @@ function showEdit(input){
 </script>
 <div class="sidebar-main">
     <div class="edit-info" id="main" bind:this={editInfo} style="width: auto;">
-        <div class="col-1" style="text-align:left;">
-            <div style="display: flex;margin-bottom:1rem;">
-                <input id="email" name="email" placeholder="Email" type="text"
-                    style="display: none;margin-bottom:0;margin-right:0.5rem;" bind:value={s_email}>
-                <p style="font-weight: 500;margin: 0.1em 0;" id="email_text">Email: {user.email}</p>
-                <span class="modify-button na-pencil-alt" on:click={()=>showEdit('email')}></span>
-            </div>
-
-            <div style="display: flex;margin-bottom:1rem;">
-                <input id="realname" name="realname" placeholder="Real Name"
-                    style="display: none;margin-bottom:0;margin-right:0.5rem;" type="text" bind:value={s_real_name}>
-                <p style="font-weight: 500;margin: 0.1em 0;" id="realname_text">Real Name: {user.real_name}</p>
-                <span class="modify-button na-pencil-alt" on:click={()=>showEdit('realname')}></span>
-            </div>
-
-            <div style="display: flex;margin-bottom:1rem;">
-                <input id="bio" name="bio" placeholder="Bio" type="text"
-                    style="display: none;margin-bottom:0;margin-right:0.5rem;" bind:value={s_bio}>
-                <p style="font-weight: 500;margin: 0.1em 0;" id="bio_text">Bio: {user.bio}</p>
-                <span class="modify-button na-pencil-alt" on:click={()=>showEdit('bio')}></span>
-            </div>
-
-            <div style="display: flex;margin-bottom:1rem;">
-                <input id="profession" name="profession" placeholder="Profession"
-                    style="display: none;margin-bottom:0;margin-right:0.5rem;" type="text" bind:value={s_profession}>
-                <p style="font-weight: 500;margin: 0.1em 0;" id="profession_text">Profession: {user.profession}</p>
-                <span class="modify-button na-pencil-alt" on:click={()=>showEdit('profession')}></span>
-            </div>
-
-            <div style="display: flex;margin-bottom:1rem;">
-                <div class="input-group" style="display: none;margin-bottom:0;margin-right:0.5rem;" id="_instagram">
-                    <div class="input-group-icon">https://instagram.com/</div>
-                    <div class="input-group-area"><input id="instagram" name="instagram" placeholder="Instagram" type="text"
-                            style="margin-bottom:0;height:100%;" bind:value={s_i}></div>
+          {#if settings}
+            <div class="col-1" style="text-align:left;">
+            {#each settings['text_input'] as setting}
+              <div style="display: flex;margin-bottom:1rem;">
+                <input id="{setting.key}" name="{setting.key}" placeholder="{setting.name}" type="text"
+                    style="display: none;margin-bottom:0;margin-right:0.5rem;" bind:value={setting.value}>
+                <p style="font-weight: 500;margin: 0.1em 0;" id="{setting.key}_text">{setting.name}: {setting.value}</p>
+                <span class="modify-button na-pencil-alt" on:click={()=>showEdit(setting.key)}></span>
+              </div>
+            {/each}
+            {#each settings['custom_input'] as setting}
+              <div style="display: flex;margin-bottom:1rem;">
+                <div class="input-group" style="display: none;margin-bottom:0;margin-right:0.5rem;" id="{setting.key}">
+                    <div class="input-group-icon">{setting.placeholder}</div>
+                    <div class="input-group-area"><input id="{setting.key}" name="{setting.key}" placeholder="{setting.name}" type="text"
+                            style="margin-bottom:0;height:100%;" bind:value={setting.value}></div>
                 </div>
-                <p style="font-weight: 500;margin: 0.1em 0;" id="_instagram_text">Instagram: {user.instagram}</p>
-                <span class="modify-button na-pencil-alt" on:click={()=>showEdit('_instagram')}></span>
+                <p style="font-weight: 500;margin: 0.1em 0;" id="{setting.key}_text">{setting.name}: {setting.value}</p>
+                <span class="modify-button na-pencil-alt" on:click={()=>showEdit(setting.key)}></span>
             </div>
-
-            Instagram:
-            <div class="input-group">
-                <div class="input-group-icon">https://instagram.com/</div>
-                <div class="input-group-area"><input id="instagram" name="instagram" placeholder="Instagram" type="text"
-                        bind:value={s_i}></div>
+            {/each}
             </div>
-            Facebook:
-            <div class="input-group">
-                <div class="input-group-icon">https://facebook.com/</div>
-                <div class="input-group-area"><input id="facebook" name="facebook" placeholder="Facebook" type="text"
-                        bind:value={s_f}></div>
-            </div>
-            Twitter:
-            <div class="input-group">
-                <div class="input-group-icon">https://twitter.com/</div>
-                <div class="input-group-area"><input id="twitter" name="twitter" placeholder="Twitter" type="text"
-                        bind:value={s_t}></div>
-            </div>
-            Github:
-            <div class="input-group">
-                <div class="input-group-icon">https://github.com/</div>
-                <div class="input-group-area"><input id="github" name="github" placeholder="Github" type="text"
-                        bind:value={s_g}></div>
-            </div>
-            Website:
-            <input id="website" name="website" placeholder="Website" type="text" bind:value={s_w}>
-        </div>
-        <div class="col-2" style="text-align:left;">
-            Gender:
-            <br>
-            <select id="genre" bind:value={s_genre} name="genre">
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-            </select>
-            <br>
-            Avatar:
-            <br>
-            <input type="file" name="avatarimg" id="avatarimg">
-            <br>
-            Cover:
-            <br>
-            <input type="file" name="coverimg" id="coverimg">
-        </div>
+            <div class="col-2" style="text-align:left;">
+              {#each settings['selectable'] as setting}
+                <div style="display: flex;margin-bottom:1rem;">
+                  <Select items={setting.values} id={setting.key} bind:selectedValue={setting.value}></Select>
+                  <p style="font-weight: 500;margin: 0.1em 0;" id="{setting.key}_text">{setting.name}: {setting.value.value}</p>
+                  <span class="modify-button na-pencil-alt" on:click={()=>showEdit(setting.key)}></span>
+                </div>
+              {/each}
+               Avatar:
+              <br>
+              <input type="file" name="avatarimg" id="avatarimg">
+              <br>
+              Cover:
+              <br>
+              <input type="file" name="coverimg" id="coverimg">
+              </div>
+          {/if}
     </div>
     <div class="edit-misc" id="misc" bind:this={editMisc}>
         <div class="col-1" style="text-align:left;">

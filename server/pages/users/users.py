@@ -3,7 +3,7 @@ from flask import Blueprint, make_response, jsonify, request
 from sqlalchemy import desc, func, or_, asc
 import datetime as dt
 from models import TagModel, ReplyModel, PostModel, UserModel
-from .modules.utilities import AuthOptional, AuthRequired, jwt, config, SaveImage, generateUserToken
+from .modules.utilities import AuthOptional, AuthRequired, jwt, config, SaveImage, generateUserToken, dict_from_class
 import json
 
 users = Blueprint('users', __name__, url_prefix='/api/v2/users')
@@ -93,7 +93,7 @@ def user(name, *args, **kwargs):
     return make_response(jsonify(user_json), 200)
 
 
-@users.route('/<string:name>/settings', methods=['GET', 'POST'])
+@users.route('/settings/<string:name>', methods=['GET', 'POST'])
 @AuthRequired
 def settings(*args, **kwargs):
 
@@ -126,21 +126,95 @@ def settings(*args, **kwargs):
 
         return make_response(jsonify({'operation': 'success', 'token': token.decode('UTF-8')}), 200)
 
-    settings_json = {}
-    settings_json['name'] = currentUser.name
-    settings_json['real_name'] = currentUser.real_name
-    settings_json['email'] = currentUser.email
-    settings_json['bio'] = currentUser.bio
-    settings_json['profession'] = currentUser.profession
-    settings_json['instagram'] = currentUser.instagram
-    settings_json['facebook'] = currentUser.facebook
-    settings_json['github'] = currentUser.github
-    settings_json['twitter'] = currentUser.twitter
-    settings_json['website'] = currentUser.website
-    settings_json['genre'] = currentUser.genre
-    settings_json['theme_mode'] = currentUser.theme_mode
-    settings_json['theme'] = currentUser.theme
-    settings_json['avatar'] = currentUser.avatar
-    settings_json['cover'] = currentUser.cover
+    settings_json = {
+        'text_input': [
+            {
+                'value': currentUser.real_name,
+                'name': 'Real Name',
+                'key': 'real_name'
+            },
+            {
+                'value': currentUser.email,
+                'name': 'Email',
+                'key': 'email'
+            },
+            {
+                'value': currentUser.bio,
+                'name': 'Bio',
+                'key': 'bio'
+            },
+            {
+                'value': currentUser.profession,
+                'name': 'Profession',
+                'key': 'profession'
+            },
+            {
+                'value': currentUser.website,
+                'name': 'Website',
+                'key': 'website'
+            }
+        ],
+        'custom_input': [
+            {
+                'value': currentUser.facebook,
+                'name': 'Facebook',
+                'key': 'facebook',
+                'placeholder' : 'https://facebook.com/'
+            },
+            {
+                'value': currentUser.instagram,
+                'name': 'Instagram',
+                'key': 'instagram',
+                'placeholder' : 'https://instagram.com/'
+            },
+            {
+                'value': currentUser.twitter,
+                'name': 'Twitter',
+                'key': 'twitter',
+                'placeholder' : 'https://twitter.com/'
+            }
+        ],
+        'images': [
+            {
+                'value': currentUser.avatar,
+                'name': 'Avatar',
+                'key': 'avatar'
+            },
+            {
+                'value': currentUser.avatar,
+                'name': 'Cover',
+                'key': 'cover'
+            }
+        ],
+        'selectable': [
+            {
+                'value': {'value': currentUser.theme_mode, 'label': currentUser.theme_mode},
+                'name': 'Theme Mode',
+                'key': 'theme_mode',
+                'values': [
+                    'Manual',
+                    'System'
+                ]
+            },
+            {
+                'value': {'value': currentUser.theme, 'label': currentUser.theme},
+                'name': 'Theme',
+                'key': 'theme',
+                'values': [
+                    'Dark',
+                    'Light'
+                ]
+            },
+            {
+                'value': {'value': currentUser.genre, 'label': currentUser.genre},
+                'name': 'Genre',
+                'key': 'genre',
+                'values': [
+                    'Male',
+                    'Female'
+                ]
+            }
+        ]
+    }
 
-    return make_response(jsonify({'settings': settings_json}), 200)
+    return make_response(jsonify(settings_json), 200)
