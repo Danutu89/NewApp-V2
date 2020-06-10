@@ -100,7 +100,6 @@ def settings(*args, **kwargs):
     currentUser = UserModel.query.filter_by(id=kwargs['token']['id']).first_or_404()
 
     if request.method == 'POST':
-        print(request)
         data = json.loads(request.form['data'].encode().decode('utf-8'))
 
         # if str(user_info.email).replace(" ", "") != str(data['email']).replace(" ",""):
