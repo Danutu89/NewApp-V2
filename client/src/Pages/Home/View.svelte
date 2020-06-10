@@ -5,9 +5,9 @@ import Posts from '../../components/Posts.svelte';
 import LSideBarLeft from '../../components/Loading/SideBarLeft.svelte';
 import LSideBarRight from '../../components/Loading/SideBarRight.svelte';
 import LPosts from '../../components/Loading/Posts.svelte';
-import {lPage} from '../../modules/Preloads.js';
 
 export let async, data, mode, logged;
+
 </script>
 
 {#if async}
@@ -27,7 +27,7 @@ export let async, data, mode, logged;
     <p style="color: red">{error.message}</p>
     {/await}
 {/if}
-{#if (data instanceof Promise) == false && $lPage.refresh == false}
+{#if (data instanceof Promise) == false}
     {#if logged}
         <SideBarLeft user={data.user} utilities={data.utilities}/>
     {:else}

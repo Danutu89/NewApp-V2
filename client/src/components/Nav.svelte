@@ -10,7 +10,6 @@ import Cookie from 'cookie-universal';
 import Join from '../components/Join.svelte';
 import {instance} from '../modules/Requests.js';
 import { activateAlert } from '../modules/Alert.js';
-import {lPage} from '../modules/Preloads.js';
 import {socket} from '../modules/SocketIO.js';
 
 const { page } = stores();
@@ -208,8 +207,8 @@ function goHome(){
   if(window.scrollY == 0){
     //reload posts;
     if($page.path == '/' || $page.path == '/discuss' || $page.path == '/tutorials' || $page.path == '/questions' || $page.path == '/saved' || $page.path == '/search')
-      lPage.set({data: $lPage.data, refresh: true});
-    else
+      //lPage.set({data: $lPage.data, refresh: true});
+    //else
       goto('/');
   }else{
     scrollToTop();

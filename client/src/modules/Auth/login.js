@@ -29,7 +29,6 @@ export default async(username,pass)=>{
             real_name: userDecoded.realname,
             email: userDecoded.email,
             avatar: userDecoded.avatar,
-            id: userDecoded.id,
             permissions: userDecoded.permissions,
             theme: userDecoded.theme,
             theme_mode: userDecoded.theme_mode

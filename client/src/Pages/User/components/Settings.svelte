@@ -2,7 +2,7 @@
 import Select from 'svelte-select';
 import {instance} from '../../../modules/Requests.js';
 import {user as User, api as Api} from '../../../modules/Store';
-import {getSettings} from '../modules/settings.js';
+import {getSettings, getJsonDiff} from '../modules';
 import { onMount } from 'svelte';
 import Cookie from 'cookie-universal';
 const cookies = Cookie();
@@ -28,7 +28,7 @@ let s_genre=user.genre,
 let s_avatarimg, s_coverimg;
 let c_coverimg,c_avatarimg;
 let isMobile;
-let settings;
+let settings, settings_base = {};
 
 function SwitchPanel(panel){
     if (panel === 'misc'){
@@ -68,23 +68,7 @@ async function SaveSettings(){
       c_coverimg = false;
   }
 
-  let payload = {
-    email: s_email, 
-    real_name: s_real_name, 
-    bio: s_bio, 
-    profession: s_profession, 
-    instagram: s_i, 
-    facebook: s_f, 
-    twitter: s_t, 
-    github: s_g, 
-    website: s_w, 
-    genre: s_genre, 
-    theme_mode: s_theme_mode, 
-    theme: s_theme,
-    avatarimg: c_avatarimg,
-    coverimg: c_coverimg
-  }
-  formdata.append('data', JSON.stringify(payload));
+  formdata.append('data', JSON.stringify(settings_base));
 
   const resp = await instance.post($Api['users.settings'], formdata, {headers: {'Content-Type': 'multipart/form-data'}}).then((response)=>{
     return response;
@@ -104,8 +88,8 @@ async function SaveSettings(){
   if (decoded != false){
     cookies.set("token", resp.data['token'],{maxAge:60 * 60 * 24 * 30, path: '/'});
     User.set({
-				name: decoded.name,
-				id: decoded.id,
+        name: decoded.name,
+        email: decoded.email,
 				avatar: decoded.avatar,
 				real_name: decoded.real_name,
 				permissions: decoded.permissions,
@@ -119,12 +103,10 @@ async function SaveSettings(){
   }
 
   goto('/user/'+user.name);
-
 }
 
 onMount(async function(){
   settings = await getSettings();
-  console.log(settings);
   
   isMobile = window.matchMedia("only screen and (max-width: 800px)").matches;
   s_coverimg = document.getElementById('coverimg');
@@ -135,7 +117,7 @@ function showEdit(input){
   var _input = document.getElementById(input);
   var _text = document.getElementById(input+'_text');
   if (_input.style.display == 'none'){
-    _input.style.display = 'block';
+    _input.style.display = 'inherit';
     _text.style.display = 'none';
   }else{
     _input.style.display = 'none';
@@ -143,6 +125,13 @@ function showEdit(input){
   }
 
 }
+function UpdateSttings(setting){
+  if(typeof setting.value == 'object')
+    settings_base[setting.key] = setting.value.value;
+  else  
+    settings_base[setting.key] = setting.value;
+}
+
 </script>
 <div class="sidebar-main">
     <div class="edit-info" id="main" bind:this={editInfo} style="width: auto;">
@@ -150,7 +139,7 @@ function showEdit(input){
             <div class="col-1" style="text-align:left;">
             {#each settings['text_input'] as setting}
               <div style="display: flex;margin-bottom:1rem;">
-                <input id="{setting.key}" name="{setting.key}" placeholder="{setting.name}" type="text"
+                <input id="{setting.key}" name="{setting.key}" on:change|preventDefault={()=>{UpdateSttings(setting)}} placeholder="{setting.name}" type="text"
                     style="display: none;margin-bottom:0;margin-right:0.5rem;" bind:value={setting.value}>
                 <p style="font-weight: 500;margin: 0.1em 0;" id="{setting.key}_text">{setting.name}: {setting.value}</p>
                 <span class="modify-button na-pencil-alt" on:click={()=>showEdit(setting.key)}></span>
@@ -159,9 +148,9 @@ function showEdit(input){
             {#each settings['custom_input'] as setting}
               <div style="display: flex;margin-bottom:1rem;">
                 <div class="input-group" style="display: none;margin-bottom:0;margin-right:0.5rem;" id="{setting.key}">
-                    <div class="input-group-icon">{setting.placeholder}</div>
-                    <div class="input-group-area"><input id="{setting.key}" name="{setting.key}" placeholder="{setting.name}" type="text"
-                            style="margin-bottom:0;height:100%;" bind:value={setting.value}></div>
+                    <div class="input-group-icon" style="margin-bottom:0;">{setting.placeholder}</div>
+                    <div class="input-group-area" style="display: flex;"><input id="{setting.key}" name="{setting.key}" on:change|preventDefault={()=>{UpdateSttings(setting)}}  placeholder="{setting.name}" type="text"
+                            style="margin-bottom:0;" bind:value={setting.value}></div>
                 </div>
                 <p style="font-weight: 500;margin: 0.1em 0;" id="{setting.key}_text">{setting.name}: {setting.value}</p>
                 <span class="modify-button na-pencil-alt" on:click={()=>showEdit(setting.key)}></span>
@@ -171,7 +160,7 @@ function showEdit(input){
             <div class="col-2" style="text-align:left;">
               {#each settings['selectable'] as setting}
                 <div style="display: flex;margin-bottom:1rem;">
-                  <Select items={setting.values} id={setting.key} bind:selectedValue={setting.value}></Select>
+                  <Select items={setting.values} on:select={(value)=>{UpdateSttings(setting)}} Id={setting.key} containerStyles={"width: calc(100% - 3.4rem);display: none"} bind:selectedValue={setting.value}></Select>
                   <p style="font-weight: 500;margin: 0.1em 0;" id="{setting.key}_text">{setting.name}: {setting.value.value}</p>
                   <span class="modify-button na-pencil-alt" on:click={()=>showEdit(setting.key)}></span>
                 </div>
@@ -184,6 +173,7 @@ function showEdit(input){
               <br>
               <input type="file" name="coverimg" id="coverimg">
               </div>
+              <button on:click={SaveSettings}>Save</button>
           {/if}
     </div>
     <div class="edit-misc" id="misc" bind:this={editMisc}>

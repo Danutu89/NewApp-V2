@@ -1,24 +1,25 @@
 <script context="module">
     import { instance } from '../../modules/Requests.js';
-    import { isSSR, lPage } from '../../modules/Preloads.js';
-    import {get, api as Api} from '../../modules/Store';
-    lPage.set({data: '/api/home?tag=', refresh: false});
+    import { isSSR } from '../../modules/Preloads.js';
+    import {get, api as Api, currentApi} from '../../modules/Store';
     export async function preload(page,session){
         let isSSRPage;
-        const res = instance.get(get(Api)['home.index']+'?tag='+page.params.slug);
-        lPage.set({data: get(Api)['home.index']+'?tag=', refresh: false});
+        currentApi.set({data: instance.get(get(Api)['home.index'] + '?tag=' + page.params.slug), json: null});
         isSSR.subscribe(value => {
             isSSRPage = value;
         })();
 
         if(!isSSRPage) {
-            return { data: res };
+            return;
         }
-        const json = await res.then(function (response) {
+
+        const json = await get(currentApi).then(function (response) {
             return response.data;
         });
-        
-        return {data: json};
+
+        currentApi.set({data: get(currentApi).data, json: json});
+
+        return;
     }
 </script>
 <script>
@@ -42,9 +43,5 @@ export let data;
 <meta name="twitter:image:src" content="https://newapp.nl/static/logo.jpg">
 </svelte:head>
 
-{#if $lPage.refresh}
-<Home mode={''}/>
-{:else}
 <Home data={data} mode={''}/>
-{/if}
 

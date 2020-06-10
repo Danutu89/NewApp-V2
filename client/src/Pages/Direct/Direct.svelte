@@ -4,29 +4,22 @@ import {onMount, beforeUpdate} from 'svelte';
 import {isSSR, lPage} from '../../modules/Preloads.js';
 import { instance } from '../../modules/Requests.js';
 import { stores, goto } from '@sapper/app';
+import {currentApi} from '../../modules/Store';
 const { page } = stores();
 
-export let data;
+let data;
 let async = undefined, posts = undefined;
 
 function LoadData(){
-    let loadEvent = new CustomEvent('reloaded');
-    if($isSSR && $lPage.refresh == false) {
+    if($isSSR) {
         isSSR.set(false);
-    } else if(data instanceof Promise || $lPage.refresh == true) {
+        data = $currentApi.json;
+    } else if(data instanceof Promise) {
         posts = async () => {
-            let promise, response;
-            if($lPage.refresh){
-                promise = $lPage.data;
-                response = await instance.get(promise);
-            }
-            else
-                response = await data;
+            data = $currentApi.data;
+            const response = await data;
             if(response.status == 200) {
                 const responseJson = await response;
-                if($lPage.refresh == true)
-                    document.dispatchEvent(loadEvent);
-                lPage.set({data: $lPage.data, refresh: false});
                 return responseJson.data;
             } else {
                 throw new Error("Something went wrong");

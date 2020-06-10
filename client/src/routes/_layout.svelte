@@ -18,7 +18,7 @@ import Screen from '../components/Controllers/Screen.svelte';
 import {socket} from '../modules/SocketIO.js';
 import {user as User, api as Api} from '../modules/Store';
 import {confirmUser} from '../modules/Auth';
-import {setApiUrls} from '../modules/Api';
+import {setApiUrls} from '../modules/Store/api.js';
 import Cookie from 'cookie-universal';
 const cookies = Cookie();
 

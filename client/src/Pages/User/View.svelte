@@ -6,7 +6,6 @@ import Settings from './components/Settings.svelte';
 import LSidebarLeft from './components/Loading/SidebarLeft.svelte';
 import LSidebarRight from './components/Loading/SidebarRight.svelte';
 import LMain from './components/Loading/Main.svelte';
-import {lPage} from '../../modules/Preloads.js';
 import {currentPage} from './modules';
 
 export let async, data;
@@ -31,7 +30,7 @@ export let async, data;
         <meta name="twitter:image:src" content="{data.avatar}">
         {/await}
 {/if}
-{#if (data instanceof Promise) == false && $lPage.refresh == false}
+{#if (data instanceof Promise) == false}
     <title>{data.real_name} - NewApp</title>
     <meta name="keywords" content="newapp,{data.name}">
     <meta name="description" content="{data.name} - {data.bio}">
@@ -75,7 +74,7 @@ export let async, data;
         <p style="color: red">{error.message}</p>
         {/await}
     {/if}
-    {#if (data instanceof Promise) == false && $lPage.refresh == false}
+    {#if (data instanceof Promise) == false}
         {#if data.cover}
         <div class="profile-cover" style="background-image: url({data.cover});background-position: center;background-size: cover;border: var(--border);height:450px;"></div>
         {:else}

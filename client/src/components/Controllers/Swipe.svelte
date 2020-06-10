@@ -1,6 +1,5 @@
 <script>
 import { onMount, beforeUpdate } from 'svelte';
-import { lPage } from '../../modules/Preloads.js';
 
 
 let swipeDir = "none";
@@ -167,7 +166,7 @@ async function swipeEnd(e){
             reload.children[0].style["animation"] = "load8 1.1s infinite linear";
             elementOpened = "reload";
             await setTimeout(()=>{
-                lPage.set({data: $lPage.data, refresh: true});
+                //lPage.set({data: $lPage.data, refresh: true});
             }, 400)
         }else{
             reload.style["min-height"] = '';

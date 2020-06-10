@@ -1,7 +1,6 @@
 <script>
 import Chats from './components/Chats.svelte';
 import Chat from './components/Chat.svelte';
-import {lPage} from '../../modules/Preloads.js';
 
 export let data, async;
 
@@ -18,7 +17,7 @@ export let data, async;
         <p style="color: red">{error.message}</p>
         {/await}
     {/if}
-    {#if (data instanceof Promise) == false && $lPage.refresh == false}
+    {#if (data instanceof Promise) == false}
         <Chats chats={data['conversations']}/>
         <Chat/>
     {/if}

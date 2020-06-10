@@ -1,6 +1,6 @@
 <script context="module">
     import { instance } from '../../../modules/Requests.js';
-    import {user as User, get, api as Api} from '../../../modules/Store';
+    import {get, api as Api, currentApi, user as User} from '../../../modules/Store';
     export async function preload(page, session){
         let args = '';
         if (get(User).auth===false){
@@ -12,17 +12,17 @@
                 return response.data;
             });
         const json = await res;
-        return { article: json };
+
+        currentApi.set({data: null, josn: json})
+        return;
     }   
 </script>
 
 <script>
 import Edit from '../../../Pages/Post/Edit.svelte';
-
-export let article;
 </script>
 
-<Edit article={article}/>
+<Edit/>
 
 <svelte:head>
 <title>Edit Profile - NewApp</title>

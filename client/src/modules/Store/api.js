@@ -1,6 +1,7 @@
 import {writable} from 'svelte/store';
+import axios from 'axios';
 
-export const api = writable({
+const api = writable({
     "auth.check_email": "/api/v2/users/auth/register/check/email/",
     "auth.check_username": "/api/v2/users/auth/register/check/username/",
     "auth.confirm": "/api/v2/users/auth/register/confirm",
@@ -30,4 +31,23 @@ export const api = writable({
     "users.user": "/api/v2/users/"
 });
 
-export default api;
+async function setApiUrls(){
+    var apiUrls = await axios.get("/api/v2").then((res)=>{return res.data;});
+    //api.set(apiUrls);
+    return;
+}
+
+const currentApi = writable(null);
+
+
+export {
+    api,
+    setApiUrls,
+    currentApi
+};
+
+export default {
+    api,
+    setApiUrls,
+    currentApi
+};
