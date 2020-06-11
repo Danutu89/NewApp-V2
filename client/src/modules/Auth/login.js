@@ -25,6 +25,7 @@ export default async(username,pass)=>{
     if(typeof(window) != "undefined")
         User.set({
             auth: true,
+            id: userDecoded.id,
             name: userDecoded.name,
             real_name: userDecoded.realname,
             email: userDecoded.email,

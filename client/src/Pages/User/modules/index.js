@@ -1,14 +1,16 @@
 import currentPage from './currentPage.js';
-import {getJsonDiff, getSettings} from './settings.js';
+import { getSettings, setSettings, settings_modified} from './settings.js';
 
 export {
     currentPage,
-    getJsonDiff,
-    getSettings
+    getSettings,
+    setSettings,
+    settings_modified
 }
 
 export default {
     currentPage,
-    getJsonDiff,
-    getSettings
+    getSettings,
+    setSettings,
+    settings_modified
 }

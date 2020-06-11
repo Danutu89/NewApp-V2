@@ -9,15 +9,15 @@ import {instance} from '../../modules/Requests.js';
 import {activateAlert} from "../../modules/Alert.js";
 import {user as User, api as Api} from '../../modules/Store';
 
-export let article;
-let title_c = article.title;
+export let data;
+let title_c = data.title;
 let title_s, editor_s;
 let editor;
 let turndown = TurndownService();
-let text_c = turndown.turndown(article.text);
+let text_c = turndown.turndown(data.text);
 
 async function EditPost(){
-    const res = await instance.post($Api['post.edit']+article.id,{title: title_c,text: marked(editor.value()),id: article.id}).then(function (response) {
+    const res = await instance.post($Api['post.edit']+data.id,{title: title_c,text: marked(editor.value()),id: data.id}).then(function (response) {
             if(response.status !=200){
                 //alert
                 return;

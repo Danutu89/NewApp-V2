@@ -50,7 +50,7 @@ def SaveImage(userId, type):
         picture_path = os.path.join(config['UPLOAD_FOLDER_PROFILE'], picture_fn)
     elif type == 'cover':
         file_name, file_ext = os.path.splitext(request.files['coverimg'].filename)
-        users = UserModel.filter_by(id=userId).first()
+        users = UserModel.query.filter_by(id=userId).first()
         picture_fn = 'user_' + str(userId) + str(file_ext)
         picture_path = os.path.join(config['UPLOAD_FOLDER_PROFILE_COVER'], picture_fn)
 

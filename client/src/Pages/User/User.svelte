@@ -2,8 +2,11 @@
 import View from './View.svelte';
 import {onMount, onDestroy} from 'svelte';
 import {isSSR} from '../../modules/Preloads.js';
+import {currentApi} from '../../modules/Store';
+import {currentPage} from './modules';
 import { stores } from '@sapper/app';
 const { page } = stores();
+
 
 export let data;
 let async = undefined, posts = undefined;
@@ -32,6 +35,7 @@ onMount(async ()=>{
 
 function PageUpdated(e){
     LoadData();
+    currentPage.set("main");
 }
 </script>
 

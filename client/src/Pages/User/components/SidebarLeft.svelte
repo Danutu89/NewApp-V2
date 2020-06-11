@@ -2,7 +2,7 @@
 import {instance} from '../../../modules/Requests.js';
 import OpenJoin from '../../../modules/OpenJoin.js';
 import {user as User, api as Api, currentChat} from '../../../modules/Store';
-import {currentPage} from '../modules';
+import {currentPage, setSettings} from '../modules';
 import {goto} from '@sapper/app';
 
 export let user;
@@ -65,6 +65,7 @@ async function goToDirect(){
     {#if $User.id == user.id}
     {#if $currentPage == "settings"}
     <button class="follow-user" id="settings-user-{user.id}" on:click={()=>{currentPage.set("main")}}>Profile</button>
+    <button class="follow-user" style="margin-top: 0.5rem;" id="save-settings-user-{user.id}" on:click={setSettings}>Save</button>
     {:else}
     <button class="follow-user" id="settings-user-{user.id}" on:click={()=>{currentPage.set("settings")}}>Settings</button>
     {/if}

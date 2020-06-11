@@ -1,5 +1,5 @@
-import localStorage from './localStorage.js';
-const currentChat = localStorage('chat',{
+import {writable} from 'svelte/store';
+const currentChat = writable({
     id: null,
     last_message: {on: "", seen: true, text: ""},
     on: "",

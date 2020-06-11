@@ -103,6 +103,7 @@ def settings(*args, **kwargs):
         data = json.loads(request.form['data'].encode().decode('utf-8'))
 
         # if str(user_info.email).replace(" ", "") != str(data['email']).replace(" ",""):
+        print(data)
         for key, setting in data.iteritems():
 
             if key == "avatar":

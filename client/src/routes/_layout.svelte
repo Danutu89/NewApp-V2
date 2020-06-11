@@ -49,6 +49,9 @@ $: if(cookies.get('token')){
 	instance.defaults.headers.common['Token'] = cookies.get('token');
 }
 
+$: if($User.theme)
+	document.querySelector("html").setAttribute("theme", $User.theme);
+
 function lazyLoad(){
 	var img = document.querySelectorAll("img");
 	img.forEach(image => {

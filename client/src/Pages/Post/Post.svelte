@@ -6,16 +6,14 @@ import {currentApi} from '../../modules/Store';
 import { stores } from '@sapper/app';
 const { page } = stores();
 
-let data;
+export let data;
 let async = undefined, posts = undefined;
 
 function LoadData(){
     if($isSSR) {
         isSSR.set(false);
-        data = $currentApi.json;
     } else if(data instanceof Promise) {
         posts = async () => {
-            data = $currentApi.data;
             const response = await data;
             if(response.status == 200) {
                 const responseJson = await response;

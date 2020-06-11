@@ -3,35 +3,46 @@
     import { isSSR } from '../modules/Preloads.js';
     import {get, api as Api, user as User, currentApi} from '../modules/Store';
     export async function preload(page){
+        let isSSRPage;
         if (get(User).auth == false){
             this.redirect(302, '/');
         }
-        currentApi.set({data: instance.get(get(Api)['notifications.index']+'?ex=true'), json: null});
+        const res = instance.get(get(Api)['notifications.index']+'?ex=true');
         isSSR.subscribe(value => {
             isSSRPage = value;
         })();
 
         if(!isSSRPage) {
-            return;
+            return { data: res };
         }
 
-        const json = await get(currentApi).data.then(function (response) {
-            return response.data;
-        });
+        const response = await res.then(function (response) {
+            return response;
+        }).catch(
+            (err)=>{
+                return err.response;
+            }
+        );
 
-        currentApi.set({data: get(currentApi).data, json: json});
+        if (response.status != 200){
+            return this.error(response.status, response.statusText);
+        }
 
-        return;
+        const json = await response.data;
+        
+        return {data: json};
     }
 </script>
 <script>
 import Notifications from '../components/Notifications.svelte';
 
-export let notifications;
+currentApi.set({data: instance.get(get(Api)['notifications.index']+'?ex=true')});
+
+export let data;
 
 </script>
 
-<Notifications not={notifications}/>
+<Notifications not={data}/>
 
 <svelte:head>
 <title>Notifications - NewApp</title>

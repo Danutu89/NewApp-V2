@@ -2,31 +2,39 @@
     import { instance } from '../modules/Requests.js';
     import { isSSR } from '../modules/Preloads.js';
     import {get, api as Api, currentApi} from '../modules/Store';
-    import { page } from '@sapper/app';
-    const  {slug} = get(page).params;
-    currentApi.set({data: instance.get(get(Api)['home.index']), json: null});
-    export async function preload(page,session){
+    export async function preload(page){
         let isSSRPage;
-        currentApi.set({data: instance.get(get(Api)['home.index']), json: null});
+        const res = instance.get(get(Api)['home.index']);
         isSSR.subscribe(value => {
             isSSRPage = value;
         })();
 
         if(!isSSRPage) {
-            return;
+            return { data: res };
+        }
+        const response = await res.then(function (response) {
+            return response;
+        }).catch(
+            (err)=>{
+                return err.response;
+            }
+        );
+
+        if (response.status != 200){
+            return this.error(response.status, response.statusText);
         }
 
-        const json = await get(currentApi).data.then(function (response) {
-            return response.data;
-        });
-
-        currentApi.set({data: get(currentApi).data, json: json});
-
-        return;
+        const json = await response.data;
+        
+        return {data: json};
     }
 </script>
 <script>
 import Home from '../Pages/Home/Home.svelte'
+
+currentApi.set({data: instance.get(get(Api)['home.index'])});
+
+export let data;
 </script>
 
 <svelte:head>
@@ -42,6 +50,5 @@ import Home from '../Pages/Home/Home.svelte'
 <meta name="twitter:image:src" content="https://newapp.nl/static/logo.jpg">
 </svelte:head>
 
-<Home mode={''}/>
-
+<Home data={data} mode={''}/>
 

@@ -206,7 +206,7 @@ function scrollToTop(){
 function goHome(){
   if(window.scrollY == 0){
     //reload posts;
-    if($page.path == '/' || $page.path == '/discuss' || $page.path == '/tutorials' || $page.path == '/questions' || $page.path == '/saved' || $page.path == '/search')
+    //if($page.path == '/' || $page.path == '/discuss' || $page.path == '/tutorials' || $page.path == '/questions' || $page.path == '/saved' || $page.path == '/search')
       //lPage.set({data: $lPage.data, refresh: true});
     //else
       goto('/');

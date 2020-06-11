@@ -4,29 +4,41 @@
     import {get, api as Api, currentApi} from '../../modules/Store';
     export async function preload(page,session){
         let isSSRPage;
-        currentApi.set({data: instance.get(get(Api)['users.user']+page.params.slug), json: null});
+        const res = instance.get(get(Api)['users.user']+page.params.slug);
         isSSR.subscribe(value => {
             isSSRPage = value;
         })();
 
         if(!isSSRPage) {
-            return;
+            return {data: res};
         }
 
-        const json = await get(currentApi).then(function (response) {
-            return response.data;
-        });
+        const response = await res.then(function (response) {
+            return response;
+        }).catch(
+            (err)=>{
+                return err.response;
+            }
+        );
 
-        currentApi.set({data: get(currentApi).data, json: json});
+        if (response.status != 200){
+            return this.error(response.status, response.statusText);
+        }
 
-        return;
+        const json = await response.data;
+
+        return {data: json};
     }
 </script>
 
 <script>
 import User from '../../Pages/User/User.svelte';
-export let data;
+import { stores } from '@sapper/app';
+const { page } = stores();
 
+currentApi.set({data: instance.get(get(Api)['users.user']+$page.params.slug)})
+
+export let data;
 </script>
 
 <User data={data}/>

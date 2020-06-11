@@ -1,22 +1,20 @@
 <script>
 import View from './View.svelte';
 import {onMount, beforeUpdate} from 'svelte';
-import {isSSR, lPage} from '../../modules/Preloads.js';
+import {isSSR} from '../../modules/Preloads.js';
 import { instance } from '../../modules/Requests.js';
 import { stores, goto } from '@sapper/app';
 import {currentApi} from '../../modules/Store';
 const { page } = stores();
 
-let data;
+export let data;
 let async = undefined, posts = undefined;
 
 function LoadData(){
     if($isSSR) {
         isSSR.set(false);
-        data = $currentApi.json;
     } else if(data instanceof Promise) {
         posts = async () => {
-            data = $currentApi.data;
             const response = await data;
             if(response.status == 200) {
                 const responseJson = await response;

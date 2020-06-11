@@ -1,7 +1,7 @@
 <script>
 import View from './View.svelte';
 import {onMount, beforeUpdate} from 'svelte';
-import {isSSR, lPage} from '../../modules/Preloads.js';
+import {isSSR} from '../../modules/Preloads.js';
 import { instance } from '../../modules/Requests.js';
 import {user} from '../../modules/Store';
 import { stores, goto } from '@sapper/app';
@@ -9,16 +9,14 @@ import {currentApi} from '../../modules/Store';
 const { page } = stores();
 
 export let mode;
-let data = $currentApi.data;
+export let data;
 let async = undefined, posts = undefined;
 
 function LoadData(){
     if($isSSR) {
         isSSR.set(false);
-        data = $currentApi.json;
-    } else{
+    } else if(data instanceof Promise){
         posts = async () => {
-            data = $currentApi.data;
             const response = await data;
             if(response.status == 200) {
                 const responseJson = await response;
@@ -32,8 +30,7 @@ function LoadData(){
 }
 
 onMount(async ()=>{
-    LoadData();
-
+    LoadData();    
     document.addEventListener("urlPathUpdated", PageUpdated);
 })
 

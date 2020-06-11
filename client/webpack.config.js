@@ -24,7 +24,10 @@ module.exports = {
 						options: {
 							dev,
 							hydratable: true,
-							hotReload: false, // Default: false
+							hotReload: false,
+							preprocess: [
+								require('svelte-preprocess')(),
+							], // Default: false
 							
 						}
 					}

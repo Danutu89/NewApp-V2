@@ -6,32 +6,49 @@
         let temp = (page.params.slug).toString().split("-");
         let id = temp[temp.length-1];
         let isSSRPage;
-        currentApi.set({data: instance.get(get(Api)['post.index']+id), json: null});
+        var res = instance.get(get(Api)['post.index']+id);
         isSSR.subscribe(value => {
             isSSRPage = value;
         })();
 
         if(!isSSRPage) {
-            return;
+            return {data: res};
         }
 
-        const json = await get(currentApi).then(function (response) {
-            return response.data;
-        });
+        const response = await res.then(function (response) {
+            return response;
+        }).catch(
+            (err)=>{
+                return err.response;
+            }
+        );
 
-        currentApi.set({data: get(currentApi).data, json: json});
+        if (response.status != 200){
+            return this.error(response.status, response.statusText);
+        }
+        const json = await response.data;
+        
 
-        return;
+        return {data: json};
     }
 </script>
 
 <script>
 import Post from '../../Pages/Post/Post.svelte';
+import { stores } from '@sapper/app';
+const { page, session } = stores();
+
+let temp = ($page.params.slug).toString().split("-");
+let id = temp[temp.length-1];
+
+currentApi.set({data: instance.get(get(Api)['post.index']+id)});
+
+export let data;
 
 </script>
 
 
-<Post/>
+<Post data={data}/>
 
 
 

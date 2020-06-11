@@ -18,7 +18,7 @@ function goBack(){
             room: $currentChat.room
         });
 
-    currentChat.reset();
+    currentChat.set({});
     
 }
 
