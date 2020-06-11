@@ -36,7 +36,7 @@ import Home from '../Pages/Home/Home.svelte'
 import { stores } from '@sapper/app';
 const { page, session } = stores();
 
-currentApi.set({data: instance.get(get(Api)['home.index']+'?search=' + page.query.q)});
+currentApi.set({data: instance.get(get(Api)['home.index']+'?search=' + $page.query.q)});
 
 export let data;
 </script>
