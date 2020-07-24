@@ -63,7 +63,7 @@ ma = Marshmallow(app)
 cipher_suite = Fernet(config.get('CIPHER_KEY'))
 serializer = URLSafeTimedSerializer(config.get('JWT_KEY'))
 
-#import sockets
+import sockets
 
 @app.errorhandler(404)
 def server_error(error):
@@ -79,25 +79,25 @@ def server_error(error):
     return make_response(jsonify({'error': 500}), 500)
 
 
-# from pages.home.home import home
-# from pages.users.auth import auth
-# from pages.users.users import users
-# from pages.follow.follow import follow
-# from pages.users.notifications import notifications
-# from pages.users.direct import direct
-# from pages.post.post import post
-# from pages.post.replies import replies
-# from pages.analytics.analytics import analytics
+from pages.home.home import home
+from pages.users.auth import auth
+from pages.users.users import users
+from pages.follow.follow import follow
+from pages.users.notifications import notifications
+from pages.users.direct import direct
+from pages.post.post import post
+from pages.post.replies import replies
+from pages.analytics.analytics import analytics
 
-# app.register_blueprint(home)
-# app.register_blueprint(post)
-# app.register_blueprint(replies)
-# app.register_blueprint(users)
-# app.register_blueprint(notifications)
-# app.register_blueprint(direct)
-# app.register_blueprint(auth)
-# app.register_blueprint(follow)
-# app.register_blueprint(analytics)
+app.register_blueprint(home)
+app.register_blueprint(post)
+app.register_blueprint(replies)
+app.register_blueprint(users)
+app.register_blueprint(notifications)
+app.register_blueprint(direct)
+app.register_blueprint(auth)
+app.register_blueprint(follow)
+app.register_blueprint(analytics)
 
 @app.route("/api/v2")
 def getApi():
@@ -111,5 +111,5 @@ gunicorn_error_logger = logging.getLogger('gunicorn.info')
 app.logger.setLevel(logging.INFO)
 
 if __name__ == "__main__":
-    #socket.run(app, threading=True,host='0.0.0.0',port=5000);
-    app.run(app, host='0.0.0.0', port=8000, debug=True)
+    socket.run(app, threading=True,host='0.0.0.0',port=5000);
+    #app.run(app, host='0.0.0.0', port=8000, debug=True)
