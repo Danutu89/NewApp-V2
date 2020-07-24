@@ -1,7 +1,8 @@
-from app import socket, make_response, jsonify, join_room, leave_room, jwt, time, key_c, db
-from models import UserModel, ConversationModel, ConversationsModel
+from app import socket, make_response, jsonify, jwt, time, config, db
+from models import User, Conversation, Conversations
 import time as time_
 import datetime as dt
+from flask_socketio import join_room, leave_room
 
 @socket.on('access')
 def access(token):
@@ -10,7 +11,7 @@ def access(token):
 
     try:
         token = token['data']
-        user_t = jwt.decode(token, key_c)
+        user_t = jwt.decode(token, config.get('JWT_KEY'))
     except:
         return make_response(jsonify({'operation': 'failed'}), 401)
 
@@ -27,7 +28,7 @@ def logout(token):
 
     try:
         token = token['data']
-        user_t = jwt.decode(token, key_c)
+        user_t = jwt.decode(token, config.get('JWT_KEY'))
     except:
         return make_response(jsonify({'operation': 'failed'}), 401)
 
