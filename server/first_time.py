@@ -1,4 +1,4 @@
-from models.models import User, User_Pers, User_Info, User_Role, Role_Permissions, Status_Types, Languages, Like_Type, Notification_Type
+from models import User, User_Pers, User_Info, User_Role, Role_Permissions, Status_Types, Languages, Like_Type, Notification_Type
 
 offline = Status_Types(
     name='Offline',
