@@ -28,7 +28,7 @@ module.exports = {
 							emitCss: false,
 							dev,
 							hydratable: true,
-							hotReload: true,
+							hotReload: false,
 							hotOptions: {
 								// whether to preserve local state (i.e. any `let` variable) or
 								// only public props (i.e. `export let ...`)
