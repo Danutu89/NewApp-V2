@@ -83,7 +83,9 @@ admin.add()
 admin_info = User_Info(
     user=admin.id,
     first_name="Daniel",
-    last_name="Ionut"
+    last_name="Ionut",
+    avatar_img="1/avatar.webp",
+    cover_img="1/cover.webp"
 )
 
 admin_info.add()
