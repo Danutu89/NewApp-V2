@@ -29,7 +29,7 @@ Flask-Migrate==2.5.3
 Flask-Script==2.0.6
 Flask-SocketIO==4.2.1
 Flask-SQLAlchemy==2.4.1
-Flask-WhooshAlchemy==0.56
+flask-whooshalchemy3==0.2.0
 futures==3.1.1
 geographiclib==1.50
 geoip2==3.0.0
@@ -58,6 +58,7 @@ more-itertools==8.4.0
 numpy==1.19.0
 packaging==20.4
 pathlib2==2.3.5
+pbr==3.1.1
 Pillow==6.2.2
 pkg-resources==0.0.0
 pluggy==0.13.1
