@@ -63,7 +63,7 @@ ma = Marshmallow(app)
 cipher_suite = Fernet(config.get('CIPHER_KEY'))
 serializer = URLSafeTimedSerializer(config.get('JWT_KEY'))
 
-#import sockets
+import sockets
 
 @app.errorhandler(404)
 def server_error(error):
@@ -111,5 +111,5 @@ gunicorn_error_logger = logging.getLogger('gunicorn.info')
 app.logger.setLevel(logging.INFO)
 
 if __name__ == "__main__":
-    
-    app.run(app, host='0.0.0.0', port=8000, debug=True)
+    socket.run(app, threading=True,host='0.0.0.0',port=5000);
+    #app.run(app, host='0.0.0.0', port=8000, debug=True)
