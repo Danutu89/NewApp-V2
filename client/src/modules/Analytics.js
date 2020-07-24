@@ -1,30 +1,27 @@
-import {instance} from '../modules/Requests.js';
-import { host } from '../modules/Options.js';
+import { instance } from './Requests.js'
+import { api as Api, get } from './Store'
 
-export default class Analytics{
-    constructor(){
-        this.time_new = null;
-        this.time_old = null;
-        this.external = false;
-    }
+class Analytics {
+	constructor() {
+		this.agent = window.navigator.userAgent
+		this.bot = /bot|google|baidu|bing|msn|duckduckbot|teoma|slurp|yandex/.test(
+			this.agent
+		)
+	}
 
-    init(external) {
-        this.time_old = Date.now();
-        this.external = external;
-    }
+	async SendView(route) {
+		let res = await instance
+			.post(get(Api)['analytics.view'], {
+				agent: this.agent,
+				bot: this.bot,
+				route: route,
+			})
+			.then((res) => res.data)
 
-    validate(){
-        this.time_new = Date.now()
-        let time = this.time_new - this.time_old;
-
-        if(time < 2000)
-            return;
-
-        this.sendView();
-    }
-
-    sendView(){
-        let path = location.pathname;
-        instance.post(host+'/api/analytics/view', {path: path,external: this.external});
-    }
+		if (res.operation != 'success') {
+			console.log('Analytics: Error')
+		}
+	}
 }
+
+export { Analytics }

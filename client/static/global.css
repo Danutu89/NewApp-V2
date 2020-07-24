@@ -2282,6 +2282,25 @@ content profile .profile-main .sidebar-info .profile-actions button.save-setting
 	padding: 0.5rem 0 0.5rem 0;
 }
 
+content profile .profile-main .sidebar-main .col-1 .section,
+content profile .profile-main .sidebar-main .col-2 .section{
+	display: flex;
+    border: var(--border);
+    border-radius: var(--border-radius);
+    background-color: var(--secondary-background);
+    text-align: center;
+    padding: 0.2rem;
+    color: var(--color);
+}
+
+content profile .profile-main .sidebar-main .col-1 .section .title,
+content profile .profile-main .sidebar-main .col-2 .section .title {
+	font-size: 1.3rem;
+    font-weight: 500;
+    line-height: 1.5;
+    margin-left: 0.5rem;
+}
+
 .modify-button[class*=" na-"]{
 	margin-inline-start:auto;
 	padding: 0.5rem;

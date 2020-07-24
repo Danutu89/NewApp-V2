@@ -1,54 +1,67 @@
 <script context="module">
-    import { instance } from '../modules/Requests.js';
-    import { isSSR } from '../modules/Preloads.js';
-    import {get, api as Api, currentApi} from '../modules/Store';
-    export async function preload(page){
-        let isSSRPage;
-        const res = instance.get(get(Api)['home.index']);
-        isSSR.subscribe(value => {
-            isSSRPage = value;
-        })();
+	import { instance } from '../modules/Requests.js'
+	import { isSSR } from '../modules/Preloads.js'
+	import { get, api as Api, currentApi } from '../modules/Store'
+	export async function preload(page) {
+		let isSSRPage
+		const res = instance.get('http://localhost' + get(Api)['home.index'])
+		isSSR.subscribe((value) => {
+			isSSRPage = value
+		})()
 
-        if(!isSSRPage) {
-            return { data: res };
-        }
-        const response = await res.then(function (response) {
-            return response;
-        }).catch(
-            (err)=>{
-                return err.response;
-            }
-        );
+		if (!isSSRPage) {
+			return { data: res }
+		}
+		const response = await res
+			.then(function (response) {
+				return response
+			})
+			.catch((err) => {
+				console.log(err)
+				return err.response
+			})
 
-        if (response.status != 200){
-            return this.error(response.status, response.statusText);
-        }
+		if (response.status != 200) {
+			return this.error(response.status, response.statusText)
+		}
 
-        const json = await response.data;
-        
-        return {data: json};
-    }
+		const json = await response.data
+
+		return { data: json }
+	}
 </script>
+
 <script>
-import Home from '../Pages/Home/Home.svelte'
+	import Home from '../Pages/Home/Home.svelte'
 
-currentApi.set({data: instance.get(get(Api)['home.index'])});
+	currentApi.set({ data: get(Api)['home.index'] })
 
-export let data;
+	export let data
 </script>
 
 <svelte:head>
-<title>NewApp - Where Developers Learn, Share, & Code</title>
-<meta name="description" content="NewApp the newest community for developers to learn, share​ ​their programming ​knowledge, and build their careers.">
-<meta property="og:type" content="website">
-<meta property="og:url" content="https://newapp.nl/">
-<meta property="og:site_name" content="NewApp">
-<meta property="og:image" itemprop="image primaryImageOfPage" content="https://newapp.nl/static/logo.jpg">
-<meta property="og:description" content="The newest community for developers to learn, share​ ​their programming ​knowledge, and build their careers.">
-<meta name="twitter:title" content="NewApp">
-<meta name="twitter:description" content="The newest community for developers to learn, share​ ​their programming ​knowledge, and build their careers.">
-<meta name="twitter:image:src" content="https://newapp.nl/static/logo.jpg">
+	<title>NewApp - Where Developers Learn, Share, & Code</title>
+	<meta
+		name="description"
+		content="NewApp the newest community for developers to learn, share​ ​their
+		programming ​knowledge, and build their careers." />
+	<meta property="og:type" content="website" />
+	<meta property="og:url" content="https://newapp.nl/" />
+	<meta property="og:site_name" content="NewApp" />
+	<meta
+		property="og:image"
+		itemprop="image primaryImageOfPage"
+		content="https://newapp.nl/static/logo.jpg" />
+	<meta
+		property="og:description"
+		content="The newest community for developers to learn, share​ ​their
+		programming ​knowledge, and build their careers." />
+	<meta name="twitter:title" content="NewApp" />
+	<meta
+		name="twitter:description"
+		content="The newest community for developers to learn, share​ ​their
+		programming ​knowledge, and build their careers." />
+	<meta name="twitter:image:src" content="https://newapp.nl/static/logo.jpg" />
 </svelte:head>
 
-<Home data={data} mode={''}/>
-
+<Home {data} mode={''} />

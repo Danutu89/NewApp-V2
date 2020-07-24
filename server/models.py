@@ -1,4 +1,3 @@
-from __future__ import division
 import datetime
 
 from sqlalchemy import ForeignKey
@@ -6,15 +5,19 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 import sqlalchemy.dialects.postgresql as sq
 
-from app import bcrypt, db, db_engine
+from sqlalchemy import Column, Integer, Sequence, String, Date, Float, DateTime, Boolean, Text
 
+from app import db, bcrypt, wa, app
 
 from flask import url_for, json
 import pytz
 
-Base = declarative_base()
+from model_types import ChoiceType
 
-class BaseModel:
+class BaseModel():
+    created_on = Column(DateTime, default=datetime.datetime.now)
+    modified_on = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
+
     def add(self):
         db.session.add(self)
         db.session.commit()
@@ -22,695 +25,588 @@ class BaseModel:
     def save(self):
         db.session.commit()
 
-class UserModel(db.Model, BaseModel):
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
 
-    __tablename__ = 'users'
+    @classmethod
+    def get(cls):
+        return db.session.query(cls)
 
-    id = db.Column(db.Integer, db.Sequence(
-        'user_id_seq'), primary_key=True, index=True)
-    join_date = db.Column(db.DateTime, primary_key=False,
-                          default=datetime.datetime.now)
-    name = db.Column(db.String(50), primary_key=False)
-    real_name = db.Column(db.String(50), primary_key=False)
-    email = db.Column(db.String(50), primary_key=False)
-    password = db.Column(db.String(255), primary_key=False)
-    avatar = db.Column(db.String, primary_key=False)
-    genre = db.Column(db.String, primary_key=False, default='None')
-    role = db.Column(db.Integer, ForeignKey('roles.id'), default=0)
-    bio = db.Column(db.String(250), primary_key=False,
-                    default='Hey i`m new here')
-    activated = db.Column(db.Boolean, primary_key=False)
-    status = db.Column(db.String, primary_key=False)
-    status_color = db.Column(db.String, primary_key=False)
-    ip_address = db.Column(db.String, primary_key=False)
-    browser = db.Column(db.String, primary_key=False)
-    country_name = db.Column(db.String, primary_key=False)
-    country_flag = db.Column(db.String, primary_key=False)
-    lang = db.Column(db.String, primary_key=False, default='eng')
-    int_tags = db.Column(sq.ARRAY(db.String), default=[], primary_key=False)
-    birthday = db.Column(db.DateTime, primary_key=False)
-    profession = db.Column(db.String, primary_key=False)
-    saved_posts = db.Column(sq.ARRAY(db.Integer),
-                            default=[], primary_key=False)
-    liked_posts = db.Column(sq.ARRAY(db.Integer),
-                            default=[], primary_key=False)
-    follow = db.Column(sq.ARRAY(db.Integer), ForeignKey(
-        'users.id'), default=[], primary_key=False)
-    followed = db.Column(sq.ARRAY(db.Integer), ForeignKey(
-        'users.id'), default=[], primary_key=False)
-    cover = db.Column(db.String, primary_key=False)
-    instagram = db.Column(db.String, primary_key=False)
-    facebook = db.Column(db.String, primary_key=False)
-    twitter = db.Column(db.String, primary_key=False)
-    github = db.Column(db.String, primary_key=False)
-    website = db.Column(db.String, primary_key=False)
-    theme = db.Column(db.String, primary_key=False, default='Light')
-    int_podcasts = db.Column(sq.ARRAY(db.Integer),
-                             default=[], primary_key=False)
-    theme_mode = db.Column(db.String, primary_key=False, default='system')
-    installed = db.Column(db.Boolean, primary_key=False)
+    @classmethod
+    def find(cls, query):
+        return cls.query.search(query)
 
-    posts = relationship("PostModel", backref="user_in")
-    replyes = relationship("ReplyModel", backref="user_in")
-    likes = relationship("LikeModel", backref="user_in")
-    following = db.relationship("UserModel", foreign_keys=[follow])
+    def time_ago(self):
+        now = datetime.datetime.now()
+        now = pytz.utc.localize(now)
+        now_aware = pytz.utc.localize(self.created_on)
+        if (now - now_aware).days / 30 > 1:
+            return str(int((now - now_aware).days / 30)) + ' months ago'
+        elif int((now - now_aware).days) > 0:
+            return str((now - now_aware).days) + ' days ago'
+        elif int((now - now_aware).seconds / 3600) > 0:
+            return str(int((now - now_aware).seconds / 3600)) + ' hours ago'
+        elif (now - now_aware).seconds / 60 > 0:
+            return str(int((now - now_aware).seconds / 60)) + ' minutes ago'
 
-    def __init__(self, id=None, join_date=None, name=None, real_name=None, email=None, password=None, avatar=None, genre=None, role=None, bio=None, activated=None,
-                 ip_address=None, browser=None, country_name=None, country_flag=None, lang=None, int_tags=None, birthday=None, profession=None, saved_posts=None, liked_posts=None, follow=None, followed=None, cover=None,
-                 instagram=None, facebook=None, twitter=None, github=None, website=None, theme=None, int_podcasts=None, status=None, status_color=None, theme_mode=None, installed=None):
+
+class User(BaseModel, db.Model):
+
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key = True, autoincrement=True)
+    name = Column(String(20))
+    email = Column(String(50))
+    password = Column(String)
+    confirmed = Column(Boolean)
+    status_id = Column(Integer, ForeignKey("status_types.id"), default = 0)
+    role_id = Column(Integer, ForeignKey("user_role.id"), default = 0)
+    info = relationship("User_Info", uselist=False, cascade="all, delete", passive_deletes = True)
+    ip = Column(ForeignKey("ip_location.id"))
+    language_id = Column(Integer, ForeignKey("languages.id"))
+    pers = relationship("User_Pers", uselist=False, cascade="all, delete", passive_deletes = True)
+    social = relationship("User_Social", uselist=True, cascade="all, delete", passive_deletes = True)
+    saved_posts = relationship("Saved_Posts", uselist=True, cascade="all, delete", passive_deletes = True)
+    tags = relationship("User_Tags", uselist=True, cascade="all, delete", passive_deletes = True)
+    likes = relationship("Post_Likes", uselist=True, cascade="all, delete", passive_deletes = True)
+    posts = relationship("Post", backref='author', uselist=True, cascade="all, delete", passive_deletes = True)
+    comments = relationship("Post_Comments", backref='author', uselist=True, cascade="all, delete", passive_deletes = True)
+    replies = relationship("Comment_Reply", backref='author', uselist=True, cascade="all, delete", passive_deletes = True)
+    notifications = relationship("Notification", foreign_keys='Notification.user', uselist=True, cascade="all, delete", passive_deletes = True)
+    following = relationship("User_Followed", foreign_keys='User_Followed.user', uselist=True, cascade="all, delete", passive_deletes = True)
+    followed = relationship("User_Following", foreign_keys='User_Following.user', uselist=True, cascade="all, delete", passive_deletes = True)
+
+    def __init__ (self, id=None, name="", email="", password="", confirmed=False, status_id=1, role_id=2, language_id=1, pers=None, info=None, location=None, language=None, ip=None):
         self.id = id
-        self.join_date = join_date
-        self.name = name
-        self.real_name = real_name
+        self.name = str(name).lower()
         self.email = email
         self.password = bcrypt.generate_password_hash(password).decode('utf-8')
-        self.avatar = avatar
-        self.genre = genre
-        self.role = role
-        self.bio = bio
-        self.activated = activated
-        self.ip_address = ip_address
-        self.browser = browser
-        self.country_name = country_name
-        self.country_flag = country_flag
-        self.lang = lang
-        self.int_tags = int_tags
-        self.birthday = birthday
+        self.confirmed = confirmed
+        self.status_id = status_id
+        self.role_id = role_id
+        self.language_id = language_id
+        self.pers = pers
+        self.info = info
+        self.location = location
+        self.language = language
+        self.ip = ip
+
+
+class User_Info(BaseModel, db.Model):
+    
+    __tablename__ = "user_info"
+
+    user = Column(Integer, ForeignKey("users.id", ondelete = 'CASCADE'), primary_key = True)
+    first_name = Column(String(20))
+    last_name = Column(String(20))
+    avatar_img = Column(String(20), default = None)
+    cover_img = Column(String(20), default = None)
+
+    def __init__ (self, user=None, first_name="", last_name="", avatar_img=None, cover_img=None):
+        self.user = user
+        self.first_name = first_name
+        self.last_name = last_name
+        self.avatar_img = avatar_img
+        self.cover_img = cover_img
+
+
+    def getFullName(self):
+        return self.first_name+' '+self.last_name
+
+class User_Pers(BaseModel, db.Model):
+    
+    __tablename__ = "user_pers"
+
+    user = Column(Integer, ForeignKey("users.id", ondelete = 'CASCADE'), primary_key = True)
+    profession = Column(String(30), default = None)
+    birthday = Column(DateTime, default = None)
+    bio = Column(String(100), default = "")
+
+    def __init__ (self, user=None, profession=None, birthday=None, bio=""):
+        self.user = user
         self.profession = profession
-        self.saved_posts = saved_posts
-        self.liked_posts = liked_posts
-        self.follow = follow
-        self.followed = followed
-        self.cover = cover
-        self.instagram = instagram
-        self.facebook = facebook
-        self.twitter = twitter
-        self.github = github
-        self.website = website
-        self.theme = theme
-        self.int_podcasts = int_podcasts
-        self.status = status
-        self.status_color = status_color
-        self.theme_mode = theme_mode
-        self.installed = installed
+        self.birthday = birthday
+        self.bio = bio
 
-    def is_authenticated(self):
-        return True
+class User_Role(BaseModel, db.Model):
 
-    def is_active(self):
-        return True
+    __tablename__ = "user_role"
 
-    def is_anonymous(self):
-        return False
+    id = Column(Integer, primary_key = True, autoincrement=True)
+    name = Column(String(15), default = "")
+    badge = Column(String(30), default = "")
+    permissions = relationship("Role_Permissions", cascade="all, delete", passive_deletes = True, uselist=False)
 
-    def get_id(self):
-        return self.id
+    user = relationship("User", backref="role")
 
-    def __repr__(self):
-        return ('<name {}').format(self.name)
-
-    def get_notifications(self):
-        return db.session.query(Notifications_Model).filter_by(for_user=self.id).all()
-
-    @staticmethod
-    def get_not_count(user):
-        return Notifications_Model.query.filter_by(checked=False).filter_by(for_user=user).count()
-
-class RoleModel(db.Model, BaseModel):
-
-    __tablename__ = 'roles'
-
-    id = db.Column(db.Integer, db.Sequence('role_id_seq'), primary_key=True)
-    name = db.Column(db.String(30), primary_key=False)
-    post_permission = db.Column(db.Boolean, primary_key=False, default=True)
-    delete_post_permission = db.Column(
-        db.Boolean, primary_key=False, default=False)
-    delete_reply_permission = db.Column(
-        db.Boolean, primary_key=False, default=False)
-    edit_post_permission = db.Column(
-        db.Boolean, primary_key=False, default=False)
-    edit_reply_permission = db.Column(
-        db.Boolean, primary_key=False, default=False)
-    close_post_permission = db.Column(
-        db.Boolean, primary_key=False, default=False)
-    delete_user_permission = db.Column(
-        db.Boolean, primary_key=False, default=False)
-    modify_user_permission = db.Column(
-        db.Boolean, primary_key=False, default=False)
-    admin_panel_permission = db.Column(
-        db.Boolean, primary_key=False, default=False)
-
-    user = relationship("UserModel", backref="roleinfo")
-
-    def __init__(self, id, name, post_permission, delete_post_permission, delete_reply_permission, edit_post_permission, edit_reply_permission,
-                 close_post_permission, delete_user_permission, modify_user_permission, admin_panel_permission):
+    def __init__ (self, id=None, name="", badge=""):
         self.id = id
         self.name = name
-        self.post_permission = post_permission
-        self.delete_post_permission = delete_post_permission
-        self.delete_reply_permission = delete_reply_permission
-        self.edit_post_permission = edit_post_permission
-        self.edit_reply_permission = edit_reply_permission
-        self.close_post_permission = close_post_permission
-        self.delete_user_permission = delete_user_permission
-        self.reply_user_permission = modify_user_permission
-        self.admin_panel_permission = admin_panel_permission
-
-    def __repr__(self):
-        return ('<name {}').format(self.name)
+        self.badge = badge
 
 
-class TagModel(db.Model, BaseModel):
+class User_Settings(BaseModel, db.Model):
 
-    __tablename__ = 'tags'
+    __tablename__ = "user_settings"
 
-    id = db.Column(db.Integer, db.Sequence('tags_id_seq'), primary_key=True)
-    name = db.Column(db.String, primary_key=False)
-    post = db.Column(sq.ARRAY(db.Integer), default=[], primary_key=False)
+    id = Column(Integer, primary_key = True, autoincrement=True)
+    name = Column(String(20), default = "")
+    type = Column(String(20), nullable=False)
+    category = Column(String(20), nullable=False)
+    key = Column(String(30), nullable=False)
 
-    def __init__(self, id, name, post):
+    def __init__(self, id=None, name='', type='', category='', key=''):
         self.id = id
         self.name = name
+        self.type = type
+        self.category = category
+        self.key = key
+
+class Role_Permissions(BaseModel, db.Model):
+
+    __tablename__ = "role_permissions"
+
+    role = Column(Integer, ForeignKey("user_role.id", ondelete = 'CASCADE'), primary_key = True)
+    edit_user = Column(Boolean, default = False)
+    delete_user = Column(Boolean, default = False)
+    add_post = Column(Boolean, default = True)
+    edit_post = Column(Boolean, default = False)
+    delete_post = Column(Boolean, default = False)
+    add_reply = Column(Boolean, default = True)
+    edit_reply = Column(Boolean, default = False)
+    delete_reply = Column(Boolean, default = False)
+    admin = Column(Boolean, default = False)
+
+    def __init__ (self, role=None, edit_user=False, delete_user=False, add_post=True, \
+        edit_post=False, delete_post=False, add_reply=True, edit_reply=False, delete_reply=False, \
+            admin=False):
+
+        self.role = role
+        self.edit_user = edit_user
+        self.delete_user = delete_user
+        self.add_post = add_post
+        self.edit_post = edit_post
+        self.delete_post = delete_post
+        self.add_reply = add_reply
+        self.edit_reply = edit_reply
+        self.delete_reply = delete_reply
+        self.admin = admin
+
+
+class User_Social(BaseModel, db.Model):
+
+    __tablename__ = "user_social"
+
+    id = Column(Integer, primary_key = True, autoincrement=True)
+    user = Column(Integer, ForeignKey("users.id", ondelete = 'CASCADE'))
+    type = Column(Integer, ForeignKey("social_types.id",  ondelete = 'CASCADE'))
+    link = Column(String(50), default = "")
+
+    social = relationship("Social_Types", cascade="all, delete", uselist=False)
+
+    def __init__ (self, user=None, type=0, link=""):
+        self.user = user
+        self.type = type
+        self.link = link
+
+
+class Social_Types(BaseModel, db.Model):
+
+    __tablename__ = "social_types"
+
+    id = Column(Integer, primary_key = True, autoincrement=True)
+    name = Column(String(15), default = "")
+    icon = Column(String(20), default = "")
+    pre_link = Column(String(30), default = "")
+
+    def __init__ (self, id=None, name="", icon="", pre_link=""):
+        self.id = id
+        self.name = name
+        self.icon = icon
+        self.pre_link = pre_link
+
+class Status_Types(BaseModel, db.Model):
+
+    __tablename__ = "status_types"
+
+    id = Column(Integer, primary_key = True, autoincrement=True)
+    name = Column(String(10), default = "")
+    color = Column(String(10), default = "")
+
+    user = relationship("User", backref="status")
+
+    def __init__ (self, id=None, name="", color=""):
+        self.id = id
+        self.name = name
+        self.color = color
+
+class Saved_Posts(BaseModel, db.Model):
+
+    __tablename__ = "saved_posts"
+
+    id = Column(Integer, primary_key = True, autoincrement=True)
+    user = Column(Integer, ForeignKey("users.id", ondelete = 'CASCADE'))
+    post = Column(Integer, ForeignKey("post.id", ondelete = 'CASCADE'))
+
+    def __init__ (self, id=None, user=None, post=None):
+        self.id = id
+        self.user = user
         self.post = post
 
 
-class PostModel(db.Model, BaseModel):
+class User_Tags(BaseModel, db.Model):
 
-    __tablename__ = 'posts'
+    __tablename__ = "user_tags"
 
-    __searchable__ = ['title']
+    id = Column(Integer, primary_key = True, autoincrement=True)
+    user = Column(Integer, ForeignKey("users.id", ondelete = 'CASCADE'))
+    tag_id = Column(Integer, ForeignKey("post_tag.id", ondelete = 'CASCADE'))
 
-    id = db.Column(db.Integer, db.Sequence('posts_id_seq'), primary_key=True)
-    title = db.Column(db.String(100), primary_key=False)
-    text = db.Column(db.String, primary_key=False)
-    views = db.Column(db.Integer, primary_key=False, default=0)
-    reply = db.Column(db.Integer, primary_key=False, default=0)
-    user = db.Column(db.Integer, ForeignKey('users.id'))
-    posted_on = db.Column(db.DateTime, primary_key=False,
-                          default=datetime.datetime.now)
-    approved = db.Column(db.Boolean, primary_key=False)
-    closed = db.Column(db.Boolean, primary_key=False)
-    closed_on = db.Column(db.DateTime, primary_key=False)
-    closed_by = db.Column(db.Integer, primary_key=False)
-    lang = db.Column(db.String, primary_key=False, default='eng')
-    thumbnail = db.Column(db.String, primary_key=False)
-    likes = db.Column(db.Integer, primary_key=False, default=0)
-    read_time = db.Column(db.String, primary_key=False)
-
-    author = db.relationship("UserModel", backref="post_by")
-
-    def __init__(self, id, title, text, views, reply, user, posted_on, approved, closed, closed_on, closed_by, lang, thumbnail, likes, read_time):
+    def __init__ (self, id=None, user=None, tag_id=None):
         self.id = id
+        self.user = user
+        self.tag_id = tag_id
+
+
+class User_Following(BaseModel, db.Model):
+
+    __tablename__ = "user_following"
+
+    id = Column(Integer, primary_key = True, autoincrement=True)
+    user = Column(Integer, ForeignKey("users.id"))
+    followed = Column(Integer, ForeignKey("users.id"))
+
+    user_rel = relationship("User", foreign_keys=[followed], uselist=False)
+
+    def __init__ (self, id=None, user=None, followed=None):
+        self.id = id
+        self.user = user
+        self.followed = followed
+
+
+class User_Followed(BaseModel, db.Model):
+
+    __tablename__ = "user_followed"
+
+    id = Column(Integer, primary_key = True, autoincrement=True)
+    user = Column(Integer, ForeignKey("users.id", ondelete = 'CASCADE'))
+    following = Column(Integer, ForeignKey("users.id", ondelete = 'CASCADE'))
+
+    def __init__ (self, id=None, user=None, following=None):
+        self.id = id
+        self.user = user
+        self.following = following
+
+class Post(BaseModel, db.Model):
+
+    __tablename__ = "post"
+    __searchable__ = ["title"]
+
+    id = Column(Integer, primary_key = True, autoincrement=True)
+    author_id = Column(Integer, ForeignKey("users.id", ondelete = 'CASCADE'))
+    title = Column(String(50))
+    approved = Column(Boolean, default = False)
+    language_id = Column(Integer, ForeignKey("languages.id", ondelete = 'SET NULL'))
+    read_time = Column(String(20))
+    info = relationship("Post_Info", cascade="all, delete", passive_deletes = True, uselist=False)
+    link = Column(String(100))
+
+    def __init__ (self, id=None, author_id=None, title="", approved=False, language_id=1, read_time="", info=None, link=''):
+        self.id = id
+        self.author_id = author_id
         self.title = title
-        self.text = text
-        self.views = views
-        self.reply = reply
-        self.user = user
-        self.posted_on = posted_on
         self.approved = approved
-        self.closed = closed
-        self.closed_on = closed_on
-        self.closed_by = closed_by
-        self.lang = lang
-        self.thumbnail = thumbnail
-        self.likes = likes
+        self.language_id = language_id
         self.read_time = read_time
-
-    def __repr__(self):
-        return '{0}(title={1})'.format(self.__class__.__name__, self.title)
-
-    def replies(self):
-        return db.session.query(ReplyModel).filter_by(post_id=self.id).count()
-
-    def closed_by_name(self):
-        users = UserModel.query.filter_by(id=self.closed_by).first()
-        return users.name
-
-    def unique_views(self):
-        return db.session.query(Analyze_Pages).filter_by(name=url_for('home.post', id=self.id, title=self.title)).count()
-
-    def time_ago(self):
-        now = datetime.datetime.now()
-        now = pytz.utc.localize(now)
-        now_aware = pytz.utc.localize(self.posted_on)
-        if (now - now_aware).days / 30 > 1:
-            return str(int((now - now_aware).days / 30)) + ' months'
-        elif int((now - now_aware).days) > 0:
-            return str((now - now_aware).days) + ' days'
-        elif int((now - now_aware).seconds / 3600) > 0:
-            return str(int((now - now_aware).seconds / 3600)) + ' hours'
-        elif (now - now_aware).seconds / 60 > 0:
-            return str(int((now - now_aware).seconds / 60)) + ' minutes'
+        self.info = info
+        self.link = link
 
 
-class ReplyModel(db.Model, BaseModel):
+class Post_Info(BaseModel, db.Model):
 
-    __tablename__ = 'replyes'
+    __tablename__ = "post_info"
 
-    id = db.Column(db.Integer, db.Sequence('replyes_id_seq'), primary_key=True)
-    text = db.Column(db.String, primary_key=False)
-    post_id = db.Column(db.Integer,  ForeignKey('posts.id'))
-    user = db.Column(db.Integer, ForeignKey('users.id'))
-    posted_on = db.Column(db.DateTime, primary_key=False,
-                          default=datetime.datetime.now)
+    post = Column(Integer, ForeignKey("post.id", ondelete = 'CASCADE'), primary_key = True)
+    text = Column(String)
+    closed_on = Column(DateTime, default = None)
+    closed = Column(Boolean, default = False)
+    closed_by = Column(Integer, ForeignKey("users.id"))
+    likes = relationship("Post_Likes", cascade="all, delete", passive_deletes = True)
+    comments = relationship("Post_Comments",cascade="all, delete",  passive_deletes = True)
+    thumbnail = Column(String(20), default = None)
+    tags = relationship("Post_Tags", cascade="all, delete", passive_deletes = True)
 
-    post = db.relationship('PostModel', backref='replyes', foreign_keys=[post_id])
-
-    def __init__(self, id, text, post_id, user, posted_on):
-        self.id = id
+    def __init__ (self, post=None, text="", closed_on=None, closed=False, closed_by=None, thumbnail="", tags=None):
+        self.post = post
         self.text = text
-        self.post_id = post_id
-        self.user = user
-        self.posted_on = posted_on
+        self.closed_on = closed_on
+        self.closed = closed
+        self.closed_by = closed_by
+        self.thumbnail = thumbnail
+        self.tags = tags
 
-    def __repr__(self):
-        return ('<id {}').format(self.id)
+class Post_Tags(BaseModel, db.Model):
 
+    __tablename__ = "post_tags"
 
-class ReplyOfReply(db.Model, BaseModel):
+    id = Column(Integer, primary_key = True, autoincrement=True)
+    post = Column(Integer, ForeignKey("post_info.post", ondelete = 'CASCADE'))
+    tag_id = Column(Integer, ForeignKey("post_tag.id", ondelete = 'CASCADE'))
 
-    __tablename__ = 'replies_of_replies'
-
-    id = db.Column(db.Integer, db.Sequence('replies_of_replies_id_seq'), primary_key=True)
-    text = db.Column(db.String, primary_key=False)
-    reply_id = db.Column(db.Integer, ForeignKey('replyes.id'))
-    user = db.Column(db.Integer, ForeignKey('users.id'))
-    posted_on = db.Column(db.DateTime, primary_key=False,
-                          default=datetime.datetime.now)
-
-    reply = db.relationship('ReplyModel', backref='replies', foreign_keys=[reply_id])
-
-    def __init__(self, id, text, reply_id, user, posted_on):
+    def __init__ (self, id=None, post=None, tag_id=None):
         self.id = id
-        self.text = text
-        self.reply_id = reply_id
-        self.user = user
-        self.posted_on = posted_on
+        self.post = post
+        self.tag_id = tag_id
 
-    def __repr__(self):
-        return ('<id {}').format(self.id)
+class Post_Tag(BaseModel, db.Model):
 
-class LikeModel(db.Model, BaseModel):
+    __tablename__ = "post_tag"
 
-    __tablename__ = 'likes'
+    id = Column(Integer, primary_key = True, autoincrement=True)
+    name = Column(String(20))
+    color = Column(String(20), default = None)
+    icon = Column(String(20), default = None)
+    count = Column(Integer, default = 0)
 
-    id = db.Column(db.Integer, db.Sequence('likes_id_seq'), primary_key=True)
-    post_id = db.Column(db.Integer, primary_key=False)
-    user = db.Column(db.Integer, ForeignKey('users.id'))
+    post = relationship("Post_Tags", cascade="all, delete", backref='tag', uselist=False)
+    user = relationship("User_Tags", cascade="all, delete", backref='tag', uselist=False)
 
-    def __init__(self, id, post_id, user):
-        self.id = id
-        self.post_id = post_id
-        self.user = user
-
-    def __repr__(self):
-        return ('<id {}').format(self.id)
-
-
-class Analyze_Session(db.Model, BaseModel):
-
-    __tablename__ = 'analyze_session'
-
-    id = db.Column(db.Integer, primary_key=True)
-    ip = db.Column(db.String, primary_key=False)
-    continent = db.Column(db.String, primary_key=False)
-    country = db.Column(db.String, primary_key=False)
-    city = db.Column(db.String, primary_key=False)
-    os = db.Column(db.String, primary_key=False, default="Unknown")
-    browser = db.Column(db.String, primary_key=False)
-    session = db.Column(db.String, primary_key=False)
-    created_at = db.Column(db.DateTime, primary_key=False)
-    bot = db.Column(db.Boolean, primary_key=False, default=False)
-    lang = db.Column(db.String, primary_key=False, default='eng')
-    referer = db.Column(db.String, primary_key=False)
-    iso_code = db.Column(db.String, primary_key=False)
-
-    def __init__(self, id, ip, continent, country, city, os, browser, session, created_at, bot, lang, referer, iso_code):
-        self.id = id
-        self.ip = ip
-        self.continent = continent
-        self.country = country
-        self.city = city
-        self.os = os
-        self.browser = browser
-        self.session = session
-        self.created_at = created_at
-        self.bot = bot
-        self.lang = lang
-        self.referer = referer
-        self.iso_code = iso_code
-
-
-class Analyze_Pages(db.Model, BaseModel):
-
-    __tablename__ = 'analyze_pages'
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String, primary_key=False)
-    session = db.Column(db.String, primary_key=False)
-    first_visited = db.Column(db.DateTime, primary_key=False)
-    visits = db.Column(db.Integer, default=1)
-
-    def __init__(self, id, name, session, first_visited, visits):
+    def __init__ (self, id=None, name="", color="", icon="", count=0):
         self.id = id
         self.name = name
-        self.session = session
-        self.first_visited = first_visited
-        self.visits = visits
-
-    @staticmethod
-    def total_views():
-        return db.session.query(Analyze_Session).filter_by(bot=False).count()
-
-    @staticmethod
-    def total_users():
-        return db.session.query(UserModel).count()
-
-    @staticmethod
-    def views_15_days():
-        now = datetime.datetime.now()
-        back_days = now - datetime.timedelta(days=15)
-        return db.session.query(Analyze_Pages).filter(Analyze_Pages.first_visited.between('{}-{}-{}'.format(back_days.year, back_days.month, back_days.day), '{}-{}-{}'.format(now.year, now.month, now.day))).count()
-
-    @staticmethod
-    def views_30_days():
-        now = datetime.datetime.now()
-        back_days = now - datetime.timedelta(days=15)
-        back_perc = back_days - datetime.timedelta(days=15)
-        return db.session.query(Analyze_Pages).filter(Analyze_Pages.first_visited.between('{}-{}-{}'.format(back_perc.year, back_perc.month, back_perc.day), '{}-{}-{}'.format(back_days.year, back_days.month, back_days.day))).count()
-
-    @staticmethod
-    def user_15_days():
-        now = datetime.datetime.now()
-        back_days = now - datetime.timedelta(days=15)
-        return db.session.query(UserModel).filter(UserModel.join_date.between('{}-{}-{}'.format(back_days.year, back_days.month, back_days.day), '{}-{}-{}'.format(now.year, now.month, now.day))).count()
-
-    @staticmethod
-    def user_30_days():
-        now = datetime.datetime.now()
-        back_days = now - datetime.timedelta(days=15)
-        back_perc = back_days - datetime.timedelta(days=15)
-        return db.session.query(UserModel).filter(UserModel.join_date.between('{}-{}-{}'.format(back_perc.year, back_perc.month, back_perc.day), '{}-{}-{}'.format(back_days.year, back_days.month, back_days.day))).count()
-
-    @staticmethod
-    def count_posts():
-        return db.session.query(PostModel).count()
-
-    @staticmethod
-    def posts_15_days():
-        now = datetime.datetime.now()
-        back_days = now - datetime.timedelta(days=15)
-        return db.session.query(PostModel).filter(PostModel.posted_on.between('{}-{}-{}'.format(back_days.year, back_days.month, back_days.day), '{}-{}-{}'.format(now.year, now.month, now.day))).count()
-
-    @staticmethod
-    def posts_30_days():
-        now = datetime.datetime.now()
-        back_days = now - datetime.timedelta(days=15)
-        back_perc = back_days - datetime.timedelta(days=15)
-        return db.session.query(PostModel).filter(PostModel.posted_on.between('{}-{}-{}'.format(back_perc.year, back_perc.month, back_perc.day), '{}-{}-{}'.format(back_days.year, back_days.month, back_days.day))).count()
-
-    @staticmethod
-    def replies_30_days():
-        now = datetime.datetime.now()
-        back_days = now - datetime.timedelta(days=15)
-        back_perc = back_days - datetime.timedelta(days=15)
-        return db.session.query(ReplyModel).filter(ReplyModel.posted_on.between('{}-{}-{}'.format(back_perc.year, back_perc.month, back_perc.day),'{}-{}-{}'.format(back_days.year, back_days.month, back_days.day))).count()
-
-    @staticmethod
-    def replies_15_days():
-        now = datetime.datetime.now()
-        back_days = now - datetime.timedelta(days=15)
-        return db.session.query(ReplyModel).filter(ReplyModel.posted_on.between('{}-{}-{}'.format(back_days.year, back_days.month, back_days.day),'{}-{}-{}'.format(now.year, now.month, now.day))).count()
-
-    @staticmethod
-    def perc_replies():
-        try:
-            return round(((Analyze_Pages.replies_15_days() - Analyze_Pages.replies_30_days()) / Analyze_Pages.replies_30_days())*100, 2)
-        except:
-            return -100
-
-    @staticmethod
-    def perc_posts():
-        try:
-            return round(((Analyze_Pages.posts_15_days() - Analyze_Pages.posts_30_days()) / Analyze_Pages.posts_30_days())*100, 2)
-        except:
-            return -100
-
-    @staticmethod
-    def perc_views():
-        try:
-            return round(((Analyze_Pages.views_15_days() - Analyze_Pages.views_30_days()) / Analyze_Pages.views_30_days())*100, 2)
-        except:
-            return -100
-
-    @staticmethod
-    def perc_users():
-        try:
-            return round(((Analyze_Pages.user_15_days() - Analyze_Pages.user_30_days()) / Analyze_Pages.user_30_days())*100, 2)
-        except:
-            return -100
-
-    @staticmethod
-    def count_replies():
-        return db.session.query(ReplyModel).count()
+        self.color = color
+        self.icon = icon
+        self.count = count
 
 
-class Notifications_Model(db.Model, BaseModel):
+class Post_Likes(BaseModel, db.Model):
 
-    __tablename__ = 'notifications'
+    __tablename__ = "post_likes"
 
-    id = db.Column(db.Integer, db.Sequence(
-        'notifications_id_seq'), primary_key=True)
-    user = db.Column(db.Integer, ForeignKey('users.id'))
-    author = db.relationship(
-        "UserModel", backref="n_author", foreign_keys=[user], order_by=id.desc())
-    title = db.Column(db.String, primary_key=False)
-    body = db.Column(db.String, primary_key=False)
-    link = db.Column(db.String, primary_key=False)
-    for_user = db.Column(db.Integer, ForeignKey('users.id'))
-    checked = db.Column(db.Boolean, primary_key=False, default=False)
-    created_on = db.Column(db.DateTime, primary_key=False,
-                           default=datetime.datetime.now)
-    category = db.Column(db.String, primary_key=False)
-    receiver = db.relationship(
-        "UserModel", backref="n_receiver", foreign_keys=[for_user], order_by=id.desc())
+    id = Column(Integer, primary_key = True, autoincrement=True)
+    post = Column(Integer, ForeignKey("post_info.post", ondelete = 'CASCADE'))
+    like = Column(Integer, ForeignKey("like_type.id", ondelete = 'CASCADE'))
+    author = Column(Integer, ForeignKey("users.id", ondelete = 'CASCADE'))
 
-    def __init__(self, id, user, title, body, link, for_user, checked, created_on, category):
+    def __init__ (self, id=None, post=None, like=None, author=None):
         self.id = id
+        self.post = post
+        self.like = like
+        self.author = author
+
+class Comment_Likes(BaseModel, db.Model):
+
+    __tablename__ = "comment_likes"
+
+    id = Column(Integer, primary_key = True, autoincrement=True)
+    comment = Column(Integer, ForeignKey("post_comments.id", ondelete = 'CASCADE'))
+    like = Column(Integer, ForeignKey("like_type.id", ondelete = 'CASCADE'))
+    author = Column(Integer, ForeignKey("users.id", ondelete = 'CASCADE'))
+
+    def __init__ (self, id=None, post=None, like=None, author=None):
+        self.id = id
+        self.comment = comment
+        self.like = like
+        self.author = author
+
+class Reply_Likes(BaseModel, db.Model):
+
+    __tablename__ = "reply_likes"
+
+    id = Column(Integer, primary_key = True, autoincrement=True)
+    reply = Column(Integer, ForeignKey("comment_reply.id", ondelete = 'CASCADE'))
+    like = Column(Integer, ForeignKey("like_type.id", ondelete = 'CASCADE'))
+    author = Column(Integer, ForeignKey("users.id", ondelete = 'CASCADE'))
+
+    def __init__ (self, id=None, post=None, like=None, author=None):
+        self.id = id
+        self.reply = reply
+        self.like = like
+        self.author = author
+
+class Like_Type(BaseModel, db.Model):
+
+    __tablename__ = "like_type"
+
+    id = Column(Integer, primary_key = True, autoincrement=True)
+    name = Column(String(10), default = "")
+    color = Column(String(15), default = "")
+    icon = Column(String(20), default = "")
+
+    def __init__ (self, id=None, name="", color="", icon=""):
+        self.id = id
+        self.name = name
+        self.color = color
+        self.icon = icon
+
+
+class Post_Comments(BaseModel, db.Model):
+
+    __tablename__ = "post_comments"
+
+    id = Column(Integer, primary_key = True, autoincrement=True)
+    post = Column(Integer, ForeignKey("post_info.post", ondelete = 'CASCADE'))
+    author_id = Column(Integer, ForeignKey("users.id", ondelete = 'CASCADE'))
+    text = Column(String, default = "")
+    replies = relationship("Comment_Reply", cascade="all, delete", passive_deletes = True)
+
+    def __init__ (self, id=None, post=None, author_id=None, text=''):
+        self.id = id
+        self.post = post
+        self.author_id = author_id
+        self.text = text
+
+
+class Comment_Reply(BaseModel, db.Model):
+
+    __tablename__ = "comment_reply"
+
+    id = Column(Integer, primary_key = True, autoincrement=True)
+    comment = Column(Integer, ForeignKey("post_comments.id", ondelete = 'CASCADE'))
+    author_id = Column(Integer, ForeignKey("users.id", ondelete = 'CASCADE'))
+    text = Column(String, default = "")
+
+    def __init__ (self, id=None, comment=None, author_id=None, text=''):
+        self.id = id
+        self.comment = comment
+        self.author_id = author_id
+        self.text = text
+
+    
+class Notification(BaseModel, db.Model):
+
+    __tablename__ = "notification"
+
+    id = Column(Integer, primary_key = True, autoincrement=True)
+    author = Column(Integer, ForeignKey("users.id", ondelete = 'CASCADE'))
+    user = Column(Integer, ForeignKey("users.id", ondelete = 'CASCADE'))
+    type = Column(Integer, ForeignKey("notification_type.id", ondelete = 'CASCADE'))
+    checked = Column(Boolean, default = False)
+    title = Column(String(40), default = "")
+    body = Column(String(40), default = "")
+    link = Column(String(50), default = "")
+
+    def __init__ (self, id=None, author=None, user=None, type=0, checked=False, title="", body="", link=""):
+        self.id = id
+        self.author = author
         self.user = user
+        self.type = type
+        self.checked = checked
         self.title = title
         self.body = body
         self.link = link
-        self.for_user = for_user
-        self.checked = checked
-        self.created_on = created_on
-        self.category = category
 
-    def time_ago(self):
-        now = datetime.datetime.now()
-        now = pytz.utc.localize(now)
-        now_aware = pytz.utc.localize(self.created_on)
-        if (now - now_aware).days / 30 > 1:
-            return str(int((now - now_aware).days / 30)) + ' months'
-        elif int((now - now_aware).days) > 0:
-            return str((now - now_aware).days) + ' days'
-        elif int((now - now_aware).seconds / 3600) > 0:
-            return str(int((now - now_aware).seconds / 3600)) + ' hours'
-        elif (now - now_aware).seconds / 60 > 0:
-            return str(int((now - now_aware).seconds / 60)) + ' minutes'
+class Notification_Type(BaseModel, db.Model):
 
+    __tablename__ = "notification_type"
 
+    id = Column(Integer, primary_key = True, autoincrement=True)
+    name = Column(String(20), default = "")
 
-
-class Podcast_SeriesModel(db.Model, BaseModel):
-
-    __tablename__ = 'podcast_series'
-
-    id = db.Column(db.Integer(), db.Sequence(
-        'podcasts_series_id_seq'), primary_key=True)
-    name = db.Column(db.String(), primary_key=False)
-    description = db.Column(db.String(), primary_key=False)
-    img = db.Column(db.String(), primary_key=False)
-
-    def __init__(self, id, name, description, img):
+    def __init__ (self, id=None, name=""):
         self.id = id
         self.name = name
-        self.description = description
-        self.img = img
 
+class Notification_Subscriber(BaseModel, db.Model):
 
-class PodcastsModel(db.Model, BaseModel):
+    __tablename__ = "notification_subscriber"
 
-    __tablename__ = 'podcasts'
+    id = Column(Integer, primary_key = True, autoincrement=True)
+    user = Column(Integer, ForeignKey("users.id", ondelete = 'CASCADE'))
+    info = Column(String)
+    is_active = Column(Boolean, default = True)
 
-    id = db.Column(db.Integer(), db.Sequence(
-        'podcasts_id_seq'), primary_key=True)
-    title = db.Column(db.String(), primary_key=False)
-    body = db.Column(db.String(), primary_key=False)
-    audio = db.Column(db.String(), primary_key=False)
-    img = db.Column(db.String(), primary_key=False)
-    series_id = db.Column(db.Integer, ForeignKey('podcast_series.id'))
-    series = db.relationship(
-        "Podcast_SeriesModel", backref="podcasts_series", foreign_keys=[series_id])
-    posted_on = db.Column(db.DateTime, primary_key=False,
-                          default=datetime.datetime.utcnow)
-    source = db.Column(db.String(), primary_key=False)
-
-    def __init__(self, id, title, body, audio, img, series_id, series, posted_on, source):
-        self.id = id
-        self.title = title
-        self.body = body
-        self.audio = audio
-        self.img = img
-        self.series_id = series_id
-        self.series = series
-        self.posted_on = posted_on
-        self.source = source
-
-
-class Subscriber(db.Model, BaseModel):
-    __tablename__ = 'subscriber'
-
-    id = db.Column(db.Integer(), primary_key=True, default=None)
-    user = db.Column(db.Integer,ForeignKey('users.id'))
-    created = db.Column(db.DateTime())
-    modified = db.Column(db.DateTime())
-    subscription_info = db.Column(db.Text())
-    is_active = db.Column(db.Boolean(), default=True)
-    user_s = db.relationship("UserModel", backref="subscription", foreign_keys=[user])
-
-    def __init__(self, id, user, created, modified, subscription_info, is_active):
+    def __init__ (self, id=None, user=None, info="", is_active=True):
         self.id = id
         self.user = user
-        self.created = created
-        self.modified = modified
-        self.subscription_info = subscription_info
+        self.info = info
         self.is_active = is_active
 
-    @property
-    def subscription_info_json(self):
-        return json.loads(self.subscription_info)
 
-    @subscription_info_json.setter
-    def subscription_info_json(self, value):
-        self.subscription_info = json.dumps(value)
+class Ip_Location(BaseModel, db.Model):
 
+    __tablename__ = "ip_location"
 
-class User_DevicesModel(db.Model, BaseModel):
+    id = Column(Integer, primary_key = True, autoincrement=True)
+    ip = Column(String(15))
+    location = relationship("Location", passive_deletes=True, uselist=False)
 
-    __tablename__ = 'user_devices'
+    user = relationship("User", backref='location', uselist=False)
 
-    id = db.Column(db.Integer, db.Sequence(
-        'user_devices_id_seq'), primary_key=True)
-    user = db.Column(db.Integer, ForeignKey('users.id'))
-    device_type = db.Column(db.String(), primary_key=False)
-    device_model = db.Column(db.String(), primary_key=False)
-    device_brand = db.Column(db.String(), primary_key=False)
-    last_access = db.Column(db.DateTime, primary_key=False)
-    activated = db.Column(db.Boolean, primary_key=False)
-    ip_address = db.Column(sq.ARRAY(db.String()),
-                           default=[], primary_key=False)
-
-    def __init__(self, id, user, device_type, device_model, device_brand, last_access, activated, ip_address):
+    def __init__(self, id=None, ip=None, location=None):
         self.id = id
-        self.user = user
-        self.device_type = device_type
-        self.device_model = device_model
-        self.device_brand = device_brand
-        self.last_access = last_access
-        self.activated = activated
-        self.ip_address = ip_address
-
-
-class Ip_Coordinates(db.Model, BaseModel):
-
-    __tablename__ = 'ip_coordinated'
-
-    code = db.Column(db.Integer(), db.Sequence(
-        'ip_coordinates_code_seq'), primary_key=True)
-    ip = db.Column(db.String, primary_key=False)
-    longitude = db.Column(db.String(), primary_key=False)
-    latitude = db.Column(db.String(), primary_key=False)
-
-    def __init__(self,code,ip,longitude,latitude):
-        self.code = code
         self.ip = ip
+        self.location = location
+
+class Location(BaseModel, db.Model):
+
+    __tablename__ = "location"
+
+    id = Column(Integer, primary_key = True, autoincrement=True)
+    longitude = Column(String(50))
+    latitude = Column(String(50))
+    country = Column(String(20))
+    city = Column(String(20))
+    flag = Column(String(10))
+    ip = Column(Integer, ForeignKey('ip_location.id', ondelete = 'CASCADE'))
+    iso = Column(String(10))
+
+    def __init__ (self, id=None, longitude=None, latitude=None, country=None, city=None, ip=None, iso='', flag=''):
+        self.id = id
         self.longitude = longitude
         self.latitude = latitude
-
-
-class Coordinates_Location(db.Model, BaseModel):
-
-    __tablename__ = 'coordinates_locations'
-
-    code_ip = db.Column(db.Integer(), ForeignKey(
-        'ip_coordinated.code'), primary_key=True)
-    continent = db.Column(db.String(), primary_key=False)
-    country = db.Column(db.String(), primary_key=False)
-    county = db.Column(db.String(), primary_key=False)
-    city = db.Column(db.String(), primary_key=False)
-    iso_code = db.Column(db.String(), primary_key=False)
-
-    ip = db.relationship(
-        "Ip_Coordinates", backref=db.backref("location", uselist=False), foreign_keys=[code_ip])
-
-    def __init__(self,code_ip,continent,country,county,city,iso_code):
-        self.code_ip = code_ip
-        self.continent = continent
         self.country = country
-        self.county = county
         self.city = city
-        self.iso_code = iso_code
+        self.ip = ip
+        self.iso = iso
+        self.flag = flag
 
-class ConversationModel(db.Model, BaseModel):
+class Languages(BaseModel, db.Model):
 
-    __tablename__ = 'conversation'
+    __tablename__ = "languages"
 
-    def __init__(self, id, members, seen, last_message_on, last_message_id):
+    id = Column(Integer, primary_key = True, autoincrement=True)
+    name = Column(String(20))
+    code = Column(String(5))
+
+    user = relationship("User", backref="language")
+    post = relationship("Post", backref="language")
+
+    def __init__ (self, id=None,name="", code=""):
         self.id = id
-        self.members = members
-        self.seen = seen
-        self.last_message_on = last_message_on
-        self.last_message_id = last_message_id
+        self.name = name
+        self.code = code
 
-    id = db.Column(db.Integer, db.Sequence('conversation_id_seq'), primary_key=True)
-    members = db.Column(sq.ARRAY(db.Integer), default=[], primary_key = False)
-    seen = db.Column(db.Boolean, primary_key=False)
-    last_message_on = db.Column(db.DateTime, primary_key=False, default=datetime.datetime.now)
-    last_message_id =  db.Column(db.Integer, ForeignKey("conversations.id"))
-    last_message = db.relationship("ConversationsModel", foreign_keys=[last_message_id], order_by=id.desc())
-
-class ConversationsModel(db.Model, BaseModel):
+class Conversations(BaseModel, db.Model):
 
     __tablename__ = 'conversations'
 
-    def __init__(self, id, message, user, created_on, conversation_id):
+    id = Column(Integer, primary_key = True, autoincrement=True)
+    members = db.Column(sq.ARRAY(db.Integer), default=[], primary_key = False)
+    seen = db.Column(db.Boolean, primary_key=False)
+
+    def __init__(self, id=None, members=[], seen=False):
+        self.id = id
+        self.members = members
+        self.seen = seen
+
+class Conversation(BaseModel, db.Model):
+
+    __tablename__ = 'conversation'
+
+    id = Column(Integer, db.Sequence('conversations_id_seq'), primary_key=True)
+    message = Column(Text, primary_key=False)
+    user_id = Column(Integer, ForeignKey('users.id'))
+    conversation_id = Column(Integer, ForeignKey("conversations.id"))
+    author = relationship("User", foreign_keys=[user_id])
+    conversation = relationship("Conversations", backref="chat", foreign_keys=[conversation_id], order_by=id.desc())
+
+    def __init__(self, id=None, message='', user_id=None, conversation_id=None):
         self.id = id
         self.message = message
-        self.user = user
-        self.created_on = created_on
+        self.user_id = user_id
         self.conversation_id = conversation_id
-
-    id = db.Column(db.Integer, db.Sequence('conversations_id_seq'), primary_key=True)
-    message = db.Column(db.Text, primary_key=False)
-    user = db.Column(db.Integer, ForeignKey('users.id'))
-    author = db.relationship("UserModel", foreign_keys=[user])
-    created_on = db.Column(db.DateTime, primary_key=False, default=datetime.datetime.now)
-    conversation_id = db.Column(db.Integer, ForeignKey("conversation.id"))
-    conversation = db.relationship("ConversationModel", backref="chat", foreign_keys=[conversation_id], order_by=id.desc())
-
-    def time_ago(self):
-        now = datetime.datetime.now()
-        now = pytz.utc.localize(now)
-        now_aware = pytz.utc.localize(self.created_on)
-        if (now - now_aware).days / 30 > 1:
-            return str(int((now - now_aware).days / 30)) + ' months'
-        elif int((now - now_aware).days) > 0:
-            return str((now - now_aware).days) + ' days'
-        elif int((now - now_aware).seconds / 3600) > 0:
-            return str(int((now - now_aware).seconds / 3600)) + ' hours'
-        elif (now - now_aware).seconds / 60 > 0:
-            return str(int((now - now_aware).seconds / 60)) + ' minutes'
 
     def date_sent(self):
         return self.created_on.strftime("%A %d %b")
@@ -718,5 +614,25 @@ class ConversationsModel(db.Model, BaseModel):
     def when_sent(self):
         return self.created_on.strftime("%H:%M")
 
+class View(BaseModel, db.Model):
 
-Base.metadata.create_all(db_engine, Base.metadata.tables.values(), checkfirst=True)
+    __tablename__ = 'view'
+
+    id = Column(Integer, db.Sequence('conversations_id_seq'), primary_key=True)
+    type = Column(String(10))
+    route = Column(String(50))
+    post_id = Column(Integer, ForeignKey('post.id'), default=None)
+    ip_id = Column(Integer, ForeignKey('ip_location.id', ondelete = 'CASCADE'))
+    ip = relationship('Ip_Location', foreign_keys=[ip_id])
+
+    def __init__(self, id=None, type='page', route='', ip_id=None, ip=None, post_id=None):
+        self.id = id
+        self.type = type
+        self.route = route
+        self.post_id = post_id
+        self.ip_id = ip_id
+        self.ip = ip
+
+
+
+wa.search_index(app,Post)

@@ -1,10 +1,14 @@
 from flask import Blueprint, make_response, jsonify, request
 
-from sqlalchemy import desc, func, or_, asc
+from sqlalchemy import desc, func, or_, asc, and_
 import datetime as dt
-from models import TagModel, ReplyModel, PostModel, UserModel
-from .modules.utilities import AuthOptional, AuthRequired, jwt, config, SaveImage, generateUserToken, dict_from_class
+from app import config
+from models import User, Post, Post_Tags, Post_Tag, User_Following, Post_Comments, User_Tags, Social_Types, User_Social, User_Settings
+import os
+from .modules.utilities import jwt, config, SaveImage, generateUserToken, CreateAvatar
+from modules import AuthOptional, AuthRequired
 import json
+from .modules.serializer import UserSchema, SettingsSchema, SocialSchema, UserMinSchema
 
 users = Blueprint('users', __name__, url_prefix='/api/v2/users')
 
@@ -12,83 +16,20 @@ users = Blueprint('users', __name__, url_prefix='/api/v2/users')
 @users.route("/<string:name>")
 @AuthOptional
 def user(name, *args, **kwargs):
-    user = UserModel.query.filter_by(name=name).first_or_404()
-    posts = PostModel.query.filter_by(user=user.id).order_by(desc(PostModel.posted_on)).paginate(page=1, per_page=5)
+    user = User.get().filter_by(name=name).first_or_404()
+    posts = Post.get().filter_by(author_id=user.id).order_by(desc(Post.created_on)).paginate(page=1, per_page=5)
 
-    if user.followed:
-        followed = UserModel.query.filter(UserModel.id.in_(user.followed[0:5])).all()
+    currentUser = None
 
-    user_json = {}
-    user_follow_list = []
-    user_follow_json = {}
-    posts_user_list = []
-    posts_temp = {}
+    if kwargs['auth']:
+        currentUser = User.get().filter_by(name=kwargs['token']['name']).first_or_404()
 
-    for post in posts.items:
-        posts_temp['title'] = post.title
-        posts_temp['author'] = {
-            'name': user.name,
-            'avatar': user.avatar
-        }
-        posts_temp['posted_on'] = post.time_ago()
-        posts_temp['tags'] = TagModel.query.with_entities(TagModel.name).filter(TagModel.post.contains([post.id])).all()
-        posts_temp['read_time'] = post.read_time
-        posts_temp['id'] = post.id
-        posts_temp['link'] = (str(post.title).replace(' ', '-')).replace('?', '') + '-' + str(post.id)
-        posts_user_list.append(posts_temp.copy())
+    serializer = UserSchema(many=False)
 
-    user_json['id'] = user.id
-    user_json['name'] = user.name
-    user_json['real_name'] = user.real_name
-    user_json['avatar'] = user.avatar
-    user_json['cover'] = user.cover
-    user_json['bio'] = user.bio
-    user_json['profession'] = user.profession
-    user_json['country_name'] = user.country_name
-    user_json['country_flag'] = user.country_flag
-    user_json['join_date'] = str(user.join_date.ctime())[:-14] + ' ' + str(user.join_date.ctime())[20:]
-    user_json['followed_count'] = len(user.followed)
-    user_json['tags_check'] = True if len(user.int_tags) > 0 else False
-    user_json['tags'] = user.int_tags
-    user_json['post_count'] = PostModel.query.filter_by(user=user.id).filter_by(approved=True).count()
-    user_json['reply_count'] = ReplyModel.query.filter_by(user=user.id).count()
-    user_json['post_views'] = 53
-    user_json['posts'] = {
-        'list': sorted(posts_user_list, key=lambda i: i['id'], reverse=True),
-        'hasnext': True if posts.has_next else False
-    }
-    user_json['follow_check'] = True if len(user.followed) > 0 else False
+    serializer.context['currentUser'] = currentUser
+    serializer.context['posts'] = posts
 
-    if user.facebook or user.twitter or user.github or user.instagram or user.website:
-        user_json['social'] = True
-        if user.facebook:
-            user_json['facebook'] = user.facebook
-        if user.instagram:
-            user_json['instagram'] = user.instagram
-        if user.twitter:
-            user_json['twitter'] = user.twitter
-        if user.github:
-            user_json['github'] = user.github
-        if user.website:
-            user_json['website'] = user.website
-
-    if user.followed:
-        for f in followed:
-            user_follow_json['name'] = f.name
-            user_follow_json['real_name'] = f.real_name
-            user_follow_json['avatar'] = f.avatar
-            user_follow_list.append(user_follow_json.copy())
-
-        user_json['follows'] = user_follow_list
-
-    if kwargs['auth'] == False:
-        return make_response(jsonify(user_json), 200)
-
-    currentUser = UserModel.query.filter_by(id=kwargs['token']['id']).first_or_404()
-
-    user_json['info'] = {
-        'following': True if currentUser.id in user.followed else False
-    }
+    user_json = serializer.dump(user)
 
     return make_response(jsonify(user_json), 200)
 
@@ -97,124 +38,109 @@ def user(name, *args, **kwargs):
 @AuthRequired
 def settings(*args, **kwargs):
 
-    currentUser = UserModel.query.filter_by(id=kwargs['token']['id']).first_or_404()
+    currentUser = User.get().filter_by(name=kwargs['token']['name']).first_or_404()
+
+    socials = Social_Types.get().all()
 
     if request.method == 'POST':
         data = json.loads(request.form['data'].encode().decode('utf-8'))
 
-        # if str(user_info.email).replace(" ", "") != str(data['email']).replace(" ",""):
         print(data)
-        for key, setting in data.iteritems():
 
-            if key == "avatar":
-                setattr(currentUser, key, '/static/profile_pics/' + SaveImage(currentUser.id, 'profile'))
-            elif key == "cover":
-                setattr(currentUser, key, '/static/profile_cover/' + SaveImage(currentUser.id, 'cover'))
-            else:
-                setattr(currentUser, key, setting)
+        if 'info' in data.keys():
 
-        currentUser.save()
+            if 'avatar_img' in data['info'].keys():
+                if data['info']['avatar_img']:
+                    data['info']['avatar_img'] = SaveImage(currentUser.id, 'profile')
+            if 'cover_img' in data['info'].keys():
+                if data['info']['cover_img']:
+                    data['info']['cover_img'] = SaveImage(currentUser.id, 'cover')
+
+            for value, key in data['info'].items():
+                setattr(currentUser.info, value, key)
+
+        if 'pers' in data.keys():
+
+            for value, key in data['pers'].items():
+                setattr(currentUser.pers, value, key)
+
+        socials_ids = [s.id for s in currentUser.social]
+
+        d_socials = socials_ids
+
+        for social in data['social']:
+            if social['id'] == 'new':
+                new_social = User_Social(
+                    user=currentUser.id, 
+                    type=social['social']['id'], 
+                    link=social['link']
+                )
+                new_social.add()
+            elif social['id']:
+                user_social = User_Social.get().filter_by(id=social['id']).first()
+                user_social.link = social['link']
+                user_social.save()
+                
+                d_socials.remove(user_social.id)
+
+        User_Social.get().filter_by(user=currentUser.id).filter(User_Social.id.in_(d_socials)).delete(synchronize_session='fetch')
 
         if request.environ.get('HTTP_X_FORWARDED_FOR') is None:
             userIP = request.environ['REMOTE_ADDR']
         else:
             userIP = request.environ['HTTP_X_FORWARDED_FOR']
         
+        currentUser.save()
         userIP = userIP.split(', ')[0]
 
         token = generateUserToken(currentUser, userIP)
 
         return make_response(jsonify({'operation': 'success', 'token': token.decode('UTF-8')}), 200)
 
-    settings_json = {
-        'text_input': [
-            {
-                'value': currentUser.real_name,
-                'name': 'Real Name',
-                'key': 'real_name'
-            },
-            {
-                'value': currentUser.email,
-                'name': 'Email',
-                'key': 'email'
-            },
-            {
-                'value': currentUser.bio,
-                'name': 'Bio',
-                'key': 'bio'
-            },
-            {
-                'value': currentUser.profession,
-                'name': 'Profession',
-                'key': 'profession'
-            },
-            {
-                'value': currentUser.website,
-                'name': 'Website',
-                'key': 'website'
-            }
-        ],
-        'custom_input': [
-            {
-                'value': currentUser.facebook,
-                'name': 'Facebook',
-                'key': 'facebook',
-                'placeholder' : 'https://facebook.com/'
-            },
-            {
-                'value': currentUser.instagram,
-                'name': 'Instagram',
-                'key': 'instagram',
-                'placeholder' : 'https://instagram.com/'
-            },
-            {
-                'value': currentUser.twitter,
-                'name': 'Twitter',
-                'key': 'twitter',
-                'placeholder' : 'https://twitter.com/'
-            }
-        ],
-        'images': [
-            {
-                'value': currentUser.avatar,
-                'name': 'Avatar',
-                'key': 'avatar'
-            },
-            {
-                'value': currentUser.avatar,
-                'name': 'Cover',
-                'key': 'cover'
-            }
-        ],
-        'selectable': [
-            {
-                'value': {'value': currentUser.theme_mode, 'label': currentUser.theme_mode},
-                'name': 'Theme Mode',
-                'key': 'theme_mode',
-                'values': [
-                    'Manual',
-                    'System'
-                ]
-            },
-            {
-                'value': {'value': currentUser.theme, 'label': currentUser.theme},
-                'name': 'Theme',
-                'key': 'theme',
-                'values': [
-                    'Dark',
-                    'Light'
-                ]
-            },
-            {
-                'value': {'value': currentUser.genre, 'label': currentUser.genre},
-                'name': 'Genre',
-                'key': 'genre',
-                'values': [
-                    'Male',
-                    'Female'
-                ]
-            }
-        ]
+    settings_temp = SettingsSchema(exclude=('info.full_name',)).dump(currentUser)
+
+    user_s = User_Settings.get().all()
+    settings_perm = {
+        'social': settings_temp['social']
     }
 
-    return make_response(jsonify(settings_json), 200)
+    for s in user_s:
+        try:
+            if not settings_perm[s.type]:
+                settings_perm[s.type] = {}
+        except:
+            settings_perm[s.type] = {}
+        
+        settings_perm[s.type][s.key] = {
+            'type': s.type,
+            'name': s.name,
+            'value': settings_temp[s.category][s.key],
+            'key': s.key,
+            'category': s.category
+        }
+
+    settings = {
+        "settings": settings_perm,
+        "utilities": {
+            "socials": SocialSchema(many=True).dump(socials)
+        }
+    }
+
+    return make_response(jsonify(settings), 200)
+
+@users.route('/', methods=['GET'])
+@AuthRequired
+def users_list(*args, **kwargs):
+    users = User.get().all()
+
+    return make_response(jsonify(UserMinSchema(many=True).dump(users)), 200)
+
+@users.route('/set/default/avatar', methods=['GET'])
+@AuthRequired
+def avatar(*args, **kwargs):
+    currentUser = User.get().filter_by(name=kwargs['token']['name']).first_or_404()
+
+    os.umask(0)
+    os.mkdir(config.get('ROOT_PATH')+'/static/users/'+str(currentUser.id))
+    CreateAvatar({"id": currentUser.id, "first_name": currentUser.info.first_name, "last_name": currentUser.info.last_name})
+

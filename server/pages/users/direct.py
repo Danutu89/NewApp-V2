@@ -1,19 +1,16 @@
 from flask import Blueprint, make_response, jsonify, request
-from .modules.utilities import AuthOptional, AuthRequired, GetItemForKeyN
+from modules import AuthRequired
 from sqlalchemy import desc, func, or_, asc, and_
-from sqlalchemy.schema import Sequence
 import datetime as dt
-from app import db, socket
-from webpush import send_notification
 
-from models import ConversationModel, ConversationsModel, Notifications_Model, PostModel, UserModel
+from models import User, Conversations, Conversation
 
 direct = Blueprint('direct', __name__, url_prefix='/api/v2/users/direct')
 
 @direct.route("/", methods=['GET', 'POST'])
 @AuthRequired
 def index(*args, **kwargs):
-    currentUser = UserModel.query.filter_by(id=kwargs['token']['id']).first()
+    currentUser = User.get().filter_by(name=kwargs['token']['name']).first()
 
     current_conv = {}
 
@@ -25,10 +22,13 @@ def index(*args, **kwargs):
             return make_response(jsonify({'operation': 'error', 'error': 'Missing data'}), 401)
 
 
-        user_chats = ConversationModel.query.with_entities(ConversationModel.id).filter(ConversationModel.members.contains([data['ids']])).all()
+        users = User.get().with_entities(User.id).filter(User.name.in_(data['users'])).all()
+        users = list(sum(users, ()))
+
+        user_chats = Conversations.get().with_entities(Conversations.id).filter(Conversations.members.contains(users)).all()
         user_chats = list(sum(user_chats, ()))
 
-        currentUser_chats = ConversationModel.query.with_entities(ConversationModel.id).filter(ConversationModel.members.contains([data['ids']])).all()
+        currentUser_chats = Conversations.get().with_entities(Conversations.id).filter(Conversations.members.contains(users)).all()
 
         currentUser_chats = set(sum(currentUser_chats, ()))
         
@@ -36,44 +36,38 @@ def index(*args, **kwargs):
         currentUser_chats = list(currentUser_chats)
 
         if len(currentUser_chats) > 0:
-            conv = ConversationModel.query.filter(ConversationModel.id.in_(currentUser_chats)).filter(func.length(ConversationModel.members) < 3).first()
+            conv = Conversations.get().filter(Conversations.id.in_(currentUser_chats)).first()
         else:
-            users = UserModel.query.with_entities(UserModel.id).filter(UserModel.name.in_([data['users']])).all()
-
-            users = list(sum(users, ())) 
             users.append(currentUser.id)
 
-            conv = ConversationModel(
-                id = None,
+            conv = Conversations(
                 members = users,
-                seen = True,
-                last_message_on = None,
-                last_message_id = None
+                seen = True
             )
 
             conv.add()
 
         members = [x for i,x in enumerate(conv.members) if x!=currentUser.id]
-        users = UserModel.query.filter(UserModel.id.in_(members)).all()
+        users = User.get().filter(User.id.in_(members)).all()
         members_json = []
         last_text = ""
 
         for m in users:
             members_json.append({
                 'name': m.name,
-                'real_name': m.real_name,
-                'avatar': m.avatar,
+                'real_name': m.info.getFullName(),
+                'avatar': m.info.avatar_img,
             })
 
-        if conv.last_message is not None:
-            last_text = conv.last_message.message
+        if len(conv.chat) > 0:
+            last_text = conv.chat[0].message
 
         current_conv = {
             'room': 'direct-'+str(conv.id),
             'id': conv.id,
             'members': members_json,
             'last_message': {
-                'on': conv.last_message_on,
+                'on': conv.chat[0].created_on if len(conv.chat) > 0 else None,
                 'text': last_text,
                 'seen': conv.seen
             }
@@ -81,31 +75,31 @@ def index(*args, **kwargs):
 
     conv_json = {'conversations': [], 'current': current_conv.copy()}
 
-    conv = ConversationModel.query.filter(ConversationModel.members.contains([currentUser.id])).all()
+    conv = Conversations.get().filter(Conversations.members.contains([currentUser.id])).all()
 
     for c in conv:
 
         members = [x for i,x in enumerate(c.members) if x!=currentUser.id]
-        users = UserModel.query.filter(UserModel.id.in_(members)).all()
+        users = User.get().filter(User.id.in_(members)).all()
         members_json = []
         last_text = ""
 
         for m in users:
             members_json.append({
                 'name': m.name,
-                'real_name': m.real_name,
-                'avatar': m.avatar,
+                'real_name': m.info.getFullName(),
+                'avatar': m.info.avatar_img,
             })
 
-        if c.last_message is not None:
-            last_text = c.last_message.message
+        if len(c.chat) > 0:
+            last_text = c.chat[0].message
 
         conv_json['conversations'].append({
             'room': 'direct-'+str(c.id),
             'id': c.id,
             'members': members_json,
             'last_message': {
-                'on': c.last_message_on,
+                'on': c.chat[0].created_on  if len(c.chat) > 0 else None,
                 'text': last_text,
                 'seen': c.seen
             }
@@ -115,13 +109,13 @@ def index(*args, **kwargs):
     return make_response(jsonify(conv_json), 200)
 
 
-@direct.route("/chat/<int:id>")
+@direct.route("/<int:id>", methods=['GET', 'POST'])
 @AuthRequired
 def chat(id, *args, **kwargs):
-    currentUser = UserModel.query.filter_by(id=kwargs['token']['id']).first()
+    currentUser = User.get().filter_by(name=kwargs['token']['name']).first()
 
     if request.method == 'GET':
-        messages = ConversationsModel.query.filter_by(conversation_id=id).order_by(asc(ConversationsModel.id)).all()
+        messages = Conversation.get().filter_by(conversation_id=id).order_by(asc(Conversation.id)).all()
 
         messages_json = []
         last_date = None
@@ -155,8 +149,8 @@ def chat(id, *args, **kwargs):
                 'datetime': m.created_on,
                 'author': {
                     'name': m.author.name,
-                    'realname': m.author.real_name,
-                    'avatar': m.author.avatar
+                    'realname': m.author.info.getFullName(),
+                    'avatar': m.author.info.avatar_img
                 },
                 'mine': mine,
                 'new_day_from_last': new_day_from_last,
@@ -172,16 +166,13 @@ def chat(id, *args, **kwargs):
             return make_response(jsonify({'operation': 'error', 'error': 'Missing data'}), 401)
 
         
-        new_message = ConversationsModel(
-            id = None,
+        new_message = Conversation(
             message = data['text'],
-            user = currentUser.id,
-            created_on = None,
+            user_id = currentUser.id,
             conversation_id = id
         )
 
-        db.session.add(new_message)
-        db.session.commit()
+        new_message.add()
 
         return make_response(jsonify({'operation': 'success'}), 200)
         

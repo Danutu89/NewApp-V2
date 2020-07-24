@@ -9,22 +9,24 @@ from webpush import send_notification
 import os
 import re
 
-from models import ReplyModel, PostModel, UserModel, Notifications_Model, ReplyOfReply
-from .modules.utilities import AuthOptional, AuthRequired, cleanhtml
+from models import User, Post_Comments, Comment_Reply, Notification, Post
+
+from .modules.serializer import CommentsSchema, RepliesSchema
+from modules import AuthOptional, AuthRequired
+from .modules.utilities import cleanhtml
 
 replies = Blueprint('replies', __name__, url_prefix='/api/v2/replies')
 
 @replies.route("/delete/<int:reply_id>")
 @AuthRequired
 def delete(reply_id, *args, **kwargs):
-    currentUser = UserModel.query.filter_by(id=kwargs['token']['id']).first()
-    reply = ReplyModel.query.filter_by(id=reply_id).first()
+    currentUser = User.get().filter_by(name=kwargs['token']['name']).first_or_404()
+    reply = Post_Comments.get().filter_by(id=reply_id).first_or_404()
 
-    if currentUser.roleinfo.delete_reply_permission == False and currentUser.id != reply.user:
+    if currentUser.role.permissions.delete_reply == False and currentUser.id != reply.user:
         return make_response(jsonify({'operation': 'no permission'}), 401)
 
-    ReplyModel.query.filter_by(id=reply_id).delete()
-    db.session.commit()
+    reply.delete()
 
     return make_response(jsonify({'operation': 'success'}), 200)
 
@@ -32,102 +34,107 @@ def delete(reply_id, *args, **kwargs):
 @replies.route("/edit", methods=['POST'])
 @AuthRequired
 def edit(*args, **kwargs):
-    currentUser = UserModel.query.filter_by(id=kwargs['token']['id']).first_or_404()
+    currentUser = User.get().filter_by(name=kwargs['token']['name']).first_or_404()
 
     data = request.json
 
     if not data['r_id'] or not data['content']:
         return make_response(jsonify({'operation': 'error', 'error': 'Missing data'}), 401)
 
-    reply = ReplyModel.query.filter_by(id=data['r_id']).first()
+    reply = Post_Comments.get().filter_by(id=data['r_id']).first()
 
-    if currentUser.roleinfo.edit_reply_permission == False and currentUser.id != reply.user:
+    if currentUser.role.permissions.edit_reply == False and currentUser.id != reply.user:
         return make_response(jsonify({'operation': 'no permission'}), 401)
 
     reply.text = data['content']
+    reply.save()
 
     reply_json = {}
 
     reply_json['mentions'] = []
-    reply_json['content'] = data['content']
+    reply_json['content'] = reply.text
     mentions = re.findall("@([a-zA-Z0-9]{1,15})", cleanhtml(data['content']))
 
     for mention in mentions:
-        check = UserModel.query.filter_by(name=mention).first()
+        check = User.get().filter_by(name=mention).first()
         if check is not None:
             reply_json['mentions'].append(mention)
 
-    db.session.commit()
 
     return make_response(jsonify({'operation': 'success', 'reply': reply_json}), 200)
 
-@replies.route('/newreply', methods=['POST'])
+@replies.route('/new', methods=['POST'])
 @AuthRequired
 def new(*args, **kwargs):
     data = request.json
 
-    if not data['token'] or not data['post_id'] or not data['content']:
+    if not data or not data['post_id'] or not data['content']:
         return make_response(jsonify({'operation': 'error', 'error': 'Missing data'}), 401)
 
-    currentUser = UserModel.query.filter_by(kwargs['token']['id']).first_or_404()
+    post = Post.get().filter_by(id=data['post_id']).first()
+
+    if not post:
+        return make_response(jsonify({'operation': 'error', 'error': 'No post'}), 401)
+
+    currentUser = User.get().filter_by(name=kwargs['token']['name']).first_or_404()
 
     if data['type'] == 'post':
-        new_reply = ReplyModel(None, data['content'], data['post_id'], currentUser.id, None)
-        index = db.session.execute(Sequence('replyes_id_seq'))
+        new_reply = Post_Comments(post=data['post_id'], text=data['content'], author_id=currentUser.id)
     else:
-        new_reply = ReplyOfReply(None, data['content'], data['reply_id'], currentUser.id, None)
-        index = db.session.execute(Sequence('replies_of_replies_id_seq'))
+        new_reply = Comment_Reply(text=data['content'], comment=data['reply_id'], author_id=currentUser.id)
+    
+    new_reply.add()
 
-    not_id = str(db.session.execute(Sequence('notifications_id_seq')))
-    post = PostModel.query.filter_by(id=data['post_id']).first()
-    notify = Notifications_Model(
-        int(not_id),
-        currentUser.id,
-        '{} replied to your post'.format(currentUser.name),
-        post.title,
-        '/post/' + (str(post.title).replace(' ', '-')).replace('?', '') + '-' + str(
-            post.id) + '?notification_id=' + str(not_id),
-        post.user_in.id,
-        False,
-        None,
-        'reply'
+    not_id = str(db.session.execute(Sequence('notification_id_seq')))
+    
+    notify = Notification(
+        id=int(not_id),
+        author=currentUser.id,
+        body='{} replied to your post'.format(currentUser.name),
+        title=post.title,
+        link=post.link + '?notification_id=' + str(not_id),
+        user=post.author.id,
+        type=4
     )
-    db.session.add(new_reply)
-    db.session.commit()
-    db.session.add(notify)
-    db.session.commit()
-    send_notification(post.user_in.id, {
+    notify.add()
+    send_notification(post.author.id, {
         'text': '{} replied to your {}'.format(currentUser.name, data['type']),
-        'link': '/post/' + (str(post.title).replace(' ', '-')).replace('?', '') + '-' + str(post.id),
-        'icon': currentUser.avatar,
+        'link': post.link + '?notification_id=' + str(not_id),
+        'icon': currentUser.info.avatar_img,
         'id': not_id
     })
-    socket.emit("notification", room="notification-{}".format(post.user_in.id))
+    socket.emit("notification", room="notification-{}".format(post.author.id))
     mentions = re.findall("@([a-zA-Z0-9]{1,15})", cleanhtml(data['content']))
-    mentioned = UserModel.query.filter(UserModel.name.in_(mentions)).all()
+    mentioned = User.get().filter(User.name.in_(mentions)).all()
     for m in mentioned:
-        not_id = str(db.session.execute(Sequence('notifications_id_seq')))
-        notify = Notifications_Model(
-            int(not_id),
-            currentUser.id,
-            '{} mentioned you in a comment'.format(m.name),
-            cleanhtml(data['content'])[:20],
-            '/post/' + (str(post.title).replace(' ', '-')).replace('?', '') + '-' + str(
-                post.id) + '?notification_id=' + str(not_id),
-            post.user_in.id,
-            False,
-            None,
-            'reply'
+        not_id = str(db.session.execute(Sequence('notification_id_seq')))
+        notify = Notification(
+            id=int(not_id),
+            author=currentUser.id,
+            title='{} mentioned you in a comment'.format(m.name),
+            body=cleanhtml(data['content'])[:20],
+            link=post.link + '?notification_id=' + str(not_id),
+            user=post.author.id,
+            type=6
         )
-        db.session.add(notify)
-        db.session.commit()
-        send_notification(post.user_in.id, {
+        notify.add()
+        send_notification(post.author.id, {
             'text': '{}  mentioned you in a comment'.format(currentUser.name),
-            'link': '/post/' + (str(post.title).replace(' ', '-')).replace('?', '') + '-' + str(
-                post.id),
-            'icon': currentUser.avatar,
+            'link': post.link + '?notification_id=' + str(not_id),
+            'icon': currentUser.info.avatar_img,
             'id': not_id
         })
         socket.emit("notification", room="notification-{}".format(m.id))
 
-    return make_response(jsonify({'operation': 'success', 'reply_id': index}), 200)
+    reply_json = {}
+
+    if data['type'] == 'post':
+        serializer = CommentsSchema(many=False)
+        serializer.context['currentUser'] = currentUser
+        reply_json = serializer.dump(new_reply)
+    else:
+        serializer = RepliesSchema(many=False)
+        serializer.context['currentUser'] = currentUser
+        reply_json = serializer.dump(new_reply)
+
+    return make_response(jsonify({'operation': 'success', 'reply': reply_json}), 200)

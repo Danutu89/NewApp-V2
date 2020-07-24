@@ -1,6 +1,6 @@
 from flask import Blueprint, make_response, jsonify, request, url_for
 
-from sqlalchemy import desc, func, or_, asc
+from sqlalchemy import desc, func, or_, asc, and_
 import datetime as dt
 import json
 from sqlalchemy.schema import Sequence
@@ -9,159 +9,132 @@ import readtime
 from webpush import send_notification
 import os
 
-from models import TagModel, Analyze_Pages, ReplyModel, PostModel, UserModel, Notifications_Model
-from .modules.utilities import AuthOptional, AuthRequired, SaveImage, GetReplies, cleanhtml, GetUserPosts
+from models import Post, Post_Likes, Post_Tags, Post_Tag, User_Following, User, Post_Info, \
+    Notification, Languages, Saved_Posts
+
+from .modules.utilities import SaveImage, cleanhtml
+from modules import AuthOptional, AuthRequired
+from .modules.serializer import PostSchemaOnly, NewPostSchema, NewPostInfoSchema, NewPostTagsSchema
 
 post = Blueprint('post', __name__, url_prefix='/api/v2/post')
 
 @post.route("/<int:id>")
 @AuthOptional
 def index(id, *args, **kwargs):
-    post = PostModel.query.filter_by(id=id).first_or_404()
+    post = Post.get().filter_by(id=id).first_or_404()
+    currentUser = None
 
-    post_json = {}
-    keywords = ''
+    if kwargs['auth']:
+        currentUser = User.get().filter_by(name=kwargs['token']['name']).first()
 
-    post_json['title'] = post.title
-    post_json['link'] = (str(post.title).replace(' ', '-')).replace('?', '') + '-' + str(post.id)
-    post_json['id'] = post.id
-    post_json['text'] = post.text
-    post_json['likes'] = post.likes
-    post_json['closed'] = post.closed
-    post_json['thumbnail'] = post.thumbnail
+    PostSchemaOnly.context['currentUser'] = currentUser
 
-    for key in str(post.title).split(" "):
-        keywords += key + ','
-
-    post_json['keywords'] = keywords
-    post_json['description'] = cleanhtml(post.text)[:97]
-
-    if post.closed:
-        post_json['closed_on'] = post.closed_on
-        post_json['closed_by'] = post.closed_by_name()
-
-    post_json['author'] = {
-        'name': post.user_in.name,
-        'avatar': post.user_in.avatar,
-        'real_name': post.user_in.real_name,
-        'id': post.user_in.id,
-        'joined_on': str(post.user_in.join_date.ctime())[:-14] + ' ' + str(post.user_in.join_date.ctime())[20:],
-        'profession': post.user_in.profession,
-        'country': post.user_in.country_name,
-        'country_flag': post.user_in.country_flag,
-        'posts': GetUserPosts(post),
-    }
-    post_json['replies'] = GetReplies(post)
-    post_json['tags'] = TagModel.query.with_entities(TagModel.name).filter(TagModel.post.contains([post.id])).all()
-
-    if kwargs['auth'] == False:
-        return make_response(jsonify(post_json), 200)
-
-    currentUser = UserModel.query.filter_by(id=kwargs['token']['id']).first_or_404()
-
-    post_json['user'] = {
-        'liked': True if post.id in currentUser.liked_posts else False, 
-        'following': True if post.user_in.id in currentUser.follow else False
-    }
-
-    return make_response(jsonify(post_json), 200)
+    return make_response(PostSchemaOnly.dump(post), 200)
 
 @post.route("/new", methods=['POST'])
 @AuthRequired
 def new(*args, **kwargs):
-    if request.method != 'POST':
-        return make_response(jsonify({'operation': 'error', 'error': 'Invalid method'}), 401)
+    currentUser = User.get().filter_by(name=kwargs['token']['name']).first_or_404()
 
-    currentUser = UserModel.query.filter_by(id=kwargs['token']['id']).first_or_404()
+    if not currentUser.role.permissions.add_post:
+        return make_response(jsonify({'operation': 'error', 'error': 'Missing permissions'}), 401)
 
-    data = json.loads(str(request.form['data']).decode('utf-8', errors='replace'))
+    if not request.form['data']:
+        return make_response(jsonify({'operation': 'error', 'error': 'Missing data'}), 401)
+        
+    data = json.loads(str(request.form['data']))
 
-    if not data['title'] or not data['content'] or not data['title'] or not data['tags']:
+    if not data['title'] or not data['content'] or not data['tags']:
         return make_response(jsonify({'operation': 'error', 'error': 'Missing data'}), 401)
 
-    index = db.session.execute(Sequence('posts_id_seq'))
+    index = str(db.session.execute(Sequence('post_id_seq')))
     thumbnail_link = None
     if data['image']:
         thumbnail = SaveImage(index)
         thumbnail_link = url_for('static', filename='thumbail_post/{}'.format(thumbnail))
+    else:
+        thumbnail_link = 'none'
 
     lang = translate.getLanguageForText(str(cleanhtml(data['content'])).encode('utf-8-sig'))
-    new_post = PostModel(
-        index,
-        data['title'],
-        data['content'],
-        None,
-        None,
-        currentUser.id,
-        None,
-        False,
-        False,
-        None,
-        None,
-        str(lang.iso_tag).lower(),
-        thumbnail_link,
-        None,
-        str(readtime.of_html(data['content']))
+
+    langQuery = Languages.get().filter_by(code=lang.iso_tag).first()
+
+    if langQuery is None:
+        new_lang = Languages(name=lang.language, code=lang.iso_tag)
+        new_lang.add()
+        langQuery = new_lang
+
+    tags_ids = []
+    tags = []
+
+    for tag in data['tags']:
+        check = Post_Tag.get().filter_by(name=tag).first()
+
+        if check is None:
+            new_tag = Post_Tag(name=tag, count=1)
+            new_tag.add()
+            check = new_tag
+        else:
+            setattr(check, 'count', Post_Tag.count + 1)
+            check.save()
+
+        tags_ids.append(check.id)
+
+    for tag_id in tags_ids:
+        tags.append({"post": index, "tag_id": tag_id})
+
+    nPost = NewPostSchema().load(
+        {   
+            "id": int(index),
+            "title": data['title'], 
+            "read_time": str(readtime.of_html(data['content'])),
+            "author_id": currentUser.id, 
+            "language_id": langQuery.id, 
+            "info": {
+                "thumbnail": thumbnail_link, 
+                "text": data['content'],
+                "tags": tags
+                },
+            "link": '/post/' + (str(data['title']).replace(' ', '-')).replace('?','') + '-' + str(index)
+        }
     )
 
-    tags = []
-    tag_p = str(data['tags']).lower()
-    tag = tag_p.replace(" ", "")
-    tags = tag.split(",")
-    for t in tags:
-        temp = TagModel.query.filter_by(name=str(t).lower()).first()
-        if temp is not None:
-            d = []
-            d = list(temp.post)
-            d.append(index)
-            temp.post = d
-        else:
-            tag = TagModel(
-                None,
-                str(t).lower(),
-                [index]
-            )
-            db.session.add(tag)
+    nPost.add()
+
     for user in currentUser.followed:
-        not_id = str(db.session.execute(Sequence('notifications_id_seq')))
-        notification = Notifications_Model(
-            int(not_id),
-            currentUser.id,
-            '{} shared a new post'.format(currentUser.name),
-            str(data['title']),
-            '/post/' + (str(data['title']).replace(' ', '-')).replace('?', '') + '-' + str(index) + '?notification_id='+str(not_id),
-            user,
-            None,
-            None,
-            'post'
+        not_id = str(db.session.execute(Sequence('notification_id_seq')))
+        notification = Notification(
+            id=int(not_id),
+            author=currentUser.id,
+            user=user.user,
+            type=5,
+            title=nPost.title,
+            body='{} shared a new post'.format(currentUser.name),
+            link= nPost.link + '?notification_id='+str(not_id)
         )
-        send_notification(user, {
-            'text': '@{} shared a new post'.format(currentUser.name),
-            'link': '/post/' + (str(data['title']).replace(' ', '-')).replace('?', '') + '-' + str(index),
-            'icon': currentUser.avatar,
+        send_notification(user.user, {
+            'text': '{} shared a new post'.format(currentUser.name),
+            'link':  nPost.link + '?notification_id='+str(not_id),
+            'icon': currentUser.info.avatar_img,
             'id': int(not_id)
         })
-        db.session.add(notification)
-    db.session.add(new_post)
-    db.session.commit()
+        notification.add()
 
-    return make_response(jsonify(
-        {
-            'operation': 'success',
-            'link': '/post/' + (str(data['title']).replace(' ', '-')).replace('?','') + '-' + str(index)
-        }
-        ), 200)
+    return make_response(jsonify({'operation': 'success','link': nPost.link}), 200)
 
 @post.route('/delete/<int:id>')
 @AuthRequired
 def delete(id, *args, **kwargs):
-    currentUser = UserModel.query.filter_by(id=kwargs['token']['id']).first()
-    post = PostModel.query.filter_by(id=id).first()
+    currentUser = User.get().filter_by(name=kwargs['token']['name']).first()
+    post = Post.get().filter_by(id=id).first()
 
-    if currentUser.id != post.user_in.id and currentUser.roleinfo.delete_post_permission == False:
+    if not post:
         return make_response(jsonify({'operation': 'failed'}), 401)
 
-    if post.thumbnail:
+    if currentUser.id != post.author.id or currentUser.role.permissions.delete_post == False:
+        return make_response(jsonify({'operation': 'failed'}), 401)
+
+    if post.info.thumbnail:
         try:
             picture_fn = 'post_' + str(id) + '.webp'
             os.remove(os.path.join(
@@ -169,31 +142,27 @@ def delete(id, *args, **kwargs):
         except:
             pass
 
-    PostModel.query.filter_by(id=id).delete()
-    ReplyModel.query.filter_by(post_id=id).delete()
-    tags = TagModel.query.filter(
-        TagModel.post.contains([id])).all()
-    for t in tags:
-        x = list(t.post)
-        x.remove(id)
-        t.post = x
+    for post_tag in post.info.tags:
+        tagQuery = Post_Tag.get().filter_by(name=post_tag.tag.name).first()
+        setattr(tagQuery, 'count', Post_Tag.count - 1)
+        tagQuery.save()
 
-    db.session.commit()
+    post.delete()
     return make_response(jsonify({'operation': 'success'}), 200)
 
 @post.route('/close/<int:id>')
 @AuthRequired
 def close(id, *args, **kwargs):
-    currentUser = UserModel.query.filter_by(id=kwargs['token']['id']).first()
-    post = PostModel.query.filter_by(id=id).first()
+    currentUser = User.get().filter_by(name=kwargs['token']['name']).first()
+    post = Post.get().filter_by(id=id).first()
 
-    if not currentUser.roleinfo.close_post_permission:
+    if currentUser.id != post.author.id or currentUser.role.permissions.close_post == False:
         return make_response(jsonify({'operation': 'failed'}), 401)
 
-    post.closed = True
-    post.closed_on = dt.datetime.now()
-    post.closed_by = currentUser.id
-    db.session.commit()
+    post.info.closed = True
+    post.info.closed_on = dt.datetime.now()
+    post.info.closed_by = currentUser.id
+    post.save()
 
     return make_response(jsonify({'operation': 'success'}), 200)
 
@@ -201,20 +170,21 @@ def close(id, *args, **kwargs):
 @post.route("/edit/<int:id>", methods=['GET', 'POST'])
 @AuthRequired
 def edit(id, *args, **kwargs):
-    post = PostModel.query.filter_by(id=id).first()
+    post = Post.get().filter_by(id=id).first()
+    
 
     if request.method == 'POST':
         data = request.json
-        post.text = data['text']
+        post.info.text = str(data['text'])
         post.title = data['title']
         post_link = (str(post.title).replace(' ', '-')).replace('?', '') + '-' + str(post.id)
-        db.session.commit()
+        post.save()
 
         return make_response(jsonify({'operation': 'success', 'link': post_link}), 200)
 
     post_json = {}
     post_json['title'] = post.title
-    post_json['text'] = post.text
+    post_json['text'] = post.info.text
     post_json['id'] = post.id
 
     return make_response(jsonify(post_json), 200)
@@ -223,118 +193,74 @@ def edit(id, *args, **kwargs):
 @post.route("/like/<int:id>")
 @AuthRequired
 def like(id, *args, **kwargs):
-    user = UserModel.query.filter_by(id=kwargs['token']['id']).first()
+    currentUser = User.get().filter_by(id=kwargs['token']['id']).first()
 
-    like = list(user.liked_posts)
-    post = PostModel.query.filter_by(id=id).first()
-    not_id = str(db.session.execute(Sequence('notifications_id_seq')))
+    post = Post.get().filter_by(id=id).first()
+    like = Post_Likes.get().filter(and_(Post_Likes.author==currentUser.id,Post_Likes.post==post.id)).first()
+    
+    not_id = str(db.session.execute(Sequence('notification_id_seq')))
 
     if like is not None:
-        if id in like:
-            like.remove(id)
-            response = jsonify({'operation': 'unliked'})
-            post.likes = post.likes - 1
-            notify = Notifications_Model(
-                int(not_id),
-                user.id,
-                '{} unliked your post'.format(user.name),
-                post.title,
-                '/post/' + (str(post.title).replace(' ', '-')).replace('?', '') + '-' + str(
-                    post.id) + '?notification_id=' + not_id,
-                post.user_in.id,
-                False,
-                None,
-                'unlike'
-            )
-            send_notification(post.user_in.id, {
-                'text': '@{} unliked your post'.format(user.name),
-                'link': '/post/' + (str(post.title).replace(' ', '-')).replace('?', '') + '-' + str(post.id),
-                'icon': user.avatar,
-                'id': not_id
-            })
-
-            not_check = Notifications_Model.query.filter_by(
-                title='{} unliked your post'.format(user.name)).filter_by(body=str(post.title)).first()
-        else:
-            response = jsonify({'operation': 'liked'})
-            post.likes = post.likes + 1
-            like.append(id)
-            notify = Notifications_Model(
-                int(not_id),
-                user.id,
-                '{} liked your post'.format(user.name),
-                post.title,
-                '/post/' + (str(post.title).replace(' ', '-')).replace('?', '') + '-' + str(
-                    post.id) + '?notification_id=' + not_id,
-                post.user_in.id,
-                False,
-                None,
-                'like'
-            )
-            send_notification(post.user_in.id, {
-                'text': '@{} liked your post'.format(user.name),
-                'link': '/post/' + (str(post.title).replace(' ', '-')).replace('?', '') + '-' + str(post.id),
-                'icon': user.avatar,
-                'id': not_id
-            })
-            not_check = Notifications_Model.query.filter_by(
-                title='{} liked your post'.format(user.name)).filter_by(body=post.title).first()
+        response = jsonify({'operation': 'disliked'})
+        like.delete()
+        body='unliked your post'
     else:
         response = jsonify({'operation': 'liked'})
-        post.likes = post.likes + 1
-        like.append(id)
-        notify = Notifications_Model(
-            int(not_id),
-            user.id,
-            '{} liked your post'.format(user.name),
-            post.title,
-            '/post/' + (str(post.title).replace(' ', '-')).replace('?', '') + '-' + str(
-                post.id) + '?notification_id=' + not_id,
-            post.user_in.id,
-            False,
-            None,
-            'like'
+        new_like = Post_Likes(
+            post=post.id,
+            author=currentUser.id
         )
-        send_notification(post.user_in.id, {
-            'text': '@{} liked your post'.format(user.name),
+        new_like.add()
+        body='liked your post'
+
+    not_check = Notification.get().filter_by(
+        title=currentUser.name + ' ' + body).filter_by(body=post.title).first()
+
+    if not_check is None:
+        notify = Notification(
+            id=int(not_id),
+            author=currentUser.id,
+            user=post.author.id,
+            type=2,
+            title=post.title,
+            body=currentUser.name + ' ' + body,
+            link='/post/' + (str(post.title).replace(' ', '-')).replace('?', '') + '-' + str(
+                post.id) + '?notification_id=' + not_id
+        )
+        notify.add()
+    else:
+        not_check.checked = False
+        not_check.save()
+        
+    if post.author.status != 2:
+        send_notification(post.author.id, {
+            'text': currentUser.name + ' ' + body,
             'link': '/post/' + (str(post.title).replace(' ', '-')).replace('?', '') + '-' + str(post.id),
-            'icon': user.avatar,
+            'icon': currentUser.info.avatar_img,
             'id': not_id
         })
-        not_check = Notifications_Model.query.filter_by(
-            title='{} liked your post'.format(user.name)).filter_by(body=post.title).first()
 
-    socket.emit("notification", room="notification-{}".format(post.user_in.id))
 
-    if not_check is not None:
-        not_check.checked = False
-    else:
-        db.session.add(notify)
-
-    user.liked_posts = like
-    db.session.commit()
+    socket.emit("notification", room="notification-{}".format(post.author.id))
 
     return make_response(response, 200)
 
 @post.route("/save/<int:id>")
 @AuthRequired
 def save(id, *args, **kwargs):
-    user = UserModel.query.filter_by(id=kwargs['token']['id']).first_or_404()
+    currentUser = User.get().filter_by(id=kwargs['token']['id']).first_or_404()
 
-    posts = list(user.saved_posts)
+    saved = Saved_Posts.get().filter(and_(Saved_Posts.user==currentUser.id,Saved_Posts.post==id)).first()
 
-    if posts is not None:
-        if id in posts:
-            posts.remove(id)
-            response = jsonify({'operation': 'deleted'})
-        else:
-            response = jsonify({'operation': 'saved'})
-            posts.append(id)
+    if saved is not None:
+        saved.delete()
+        response = jsonify({'operation': 'deleted'})
     else:
+        new_saved = Saved_Posts(
+            user=currentUser.id,
+            post=id
+        )
+        new_saved.add()
         response = jsonify({'operation': 'saved'})
-        posts.append(id)
-
-    user.saved_posts = posts
-    db.session.commit()
 
     return make_response(response, 200)

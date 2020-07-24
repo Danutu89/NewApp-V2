@@ -1,6 +1,5 @@
-import {writable} from 'svelte/store';
+import { writable } from 'svelte/store'
 
-const currentPage = writable("main");
+const currentPage = writable('main')
 
-
-export default currentPage;
+export default currentPage

@@ -1,9 +1,9 @@
-function OpenJoin(){
-    let j_modal = document.getElementById('join-modal');
+function OpenJoin() {
+	let j_modal = document.getElementById('join-modal')
 
-    j_modal.style["visibility"] = "visible";
-    j_modal.style["opacity"] = 1;
-    j_modal.style["pointer-events"] = "auto";
+	j_modal.style['visibility'] = 'visible'
+	j_modal.style['opacity'] = 1
+	j_modal.style['pointer-events'] = 'auto'
 }
 
-export default OpenJoin;
+export default OpenJoin

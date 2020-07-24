@@ -4,8 +4,20 @@
     "python.linting.enabled": true,
     "deno.enable": false,
     "jshint.options": {
-        "esversion": 6
+        "esversion": 9
     },
     "python.linting.pylamaEnabled": false,
-    "python.pythonPath": "server/.venv/bin/python2.7",
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "[javascript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[svelte]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "prettier.eslintIntegration": true,
+    "prettier.configPath": "../client/.prettierrc.json",
+    "python.pythonPath": "server/.venv/bin/python3",
+    "typescript.validate.enable": false, 
+    "tslint.enable": false, 
+    "tslint.jsEnable": false
 }

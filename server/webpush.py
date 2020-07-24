@@ -1,5 +1,5 @@
 from pywebpush import webpush, WebPushException
-from models import Subscriber
+from models import Notification_Subscriber
 import json
 
 VAPID_PRIVATE_KEY = "gdZv-jxuKPeaukXrkXlKZ33j4zbLDe60WCnAN0Pba94"
@@ -7,10 +7,10 @@ VAPID_PUBLIC_KEY = "BGfsb_G1tXj-jSN8h-9spz2znzfm1sib-Xx42FLmN8p7xQwv8C_ke_-77DFK
 VAPID_CLAIMS = {"sub": "mailto:develop@raturi.in"}
 
 def send_notification(users, body):
-    check = Subscriber.query.filter(Subscriber.user.in_([users])).all()
+    check = Notification_Subscriber.get().filter(Notification_Subscriber.user.in_([users])).all()
     for c in check:
         try:
-            sub = (str(c.subscription_info).encode().decode('utf-8')).replace("'", '"')
+            sub = (str(c.info).encode().decode('utf-8')).replace("'", '"')
             sub = sub.replace("None", "null")
             body = ((str(body).replace("'", '"')).replace("None", "null"))
             send_web_push(json.loads(sub), body)

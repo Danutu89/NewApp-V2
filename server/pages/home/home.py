@@ -1,9 +1,12 @@
 from flask import Blueprint, make_response, jsonify, request
-from .modules.utilities import AuthOptional, AuthRequired, GetTrending
+from modules import AuthOptional, AuthRequired
 from sqlalchemy import desc, func, or_, asc
 import datetime as dt
 
-from models import TagModel, Analyze_Pages, PostModel, UserModel
+from models import User, Post, Post_Tag, Post_Tags, Saved_Posts, User_Tags, \
+    User_Following
+
+from .modules.serializer import PostsSchema, PostTagsOnlySchema
 
 home = Blueprint('home', __name__, url_prefix='/api/v2/home')
 
@@ -25,113 +28,100 @@ def index(*args, **kwargs):
     search = request.args.get('search')
     user = request.args.get('user')
 
-    if kwargs['auth']:
-        currentUser = UserModel.query.filter_by(id=kwargs['token']['id']).first_or_404()
-        query = PostModel.query.filter_by(approved=True)\
-                    .filter(or_(PostModel.lang.like(currentUser.lang), PostModel.lang.like('en')))
-    else:
-        query = PostModel.query.filter_by(approved=True)
+    currentUser = None
 
+    if search:
+        query = Post.find(search)
+    else:
+        query = Post.get()
+
+    if kwargs['auth']:
+        currentUser = User.get().filter_by(name=kwargs['token']['name']).first_or_404()
+        query = query.filter_by(approved=True)\
+                    .filter(or_(Post.language_id == currentUser.language_id, Post.language_id == 1))
+    else:
+        query = query.filter_by(approved=True)
+    
     if tag:
-        tag_posts = TagModel.query.filter_by(name=tag).first_or_404()
-        query = query.filter(PostModel.id.in_(tag_posts.post))
+        tagQuery = Post_Tag.get().filter_by(name=tag).first_or_404()
+        tags = Post_Tags.get().with_entities(Post_Tags.post).filter_by(tag_id=tagQuery.id).all()
+        tags = list(tuple(tags))
+        query = query.filter(Post.id.in_(tags))
     elif mode == 'saved':
         if kwargs['auth'] == False:
-            make_response(jsonify({'auth': 'Invalid token.'}), 401)
-        query = query.filter(PostModel.id.in_(currentUser.saved_posts))
+            return make_response(jsonify({'auth': 'Invalid token.'}), 401)
+        saved = Saved_Posts.get().with_entities(Saved_Posts.post).filter_by(user=currentUser.id).all()
+        saved = list(tuple(saved))
+        query = query.filter(Post.id.in_(saved))
+
     elif mode == 'recent':
-        query = query
+        pass
     elif mode == 'discuss' or mode == 'questions' or mode == 'tutorials':
         if mode == 'discuss':
-            tg = TagModel.query.filter(TagModel.name.in_(['discuss', 'talk'])).order_by(
-                desc(func.array_length(TagModel.post, 1))).all()
+            tags = ['discuss', 'talk']
         elif mode == 'tutorials':
-            tg = TagModel.query.filter(TagModel.name.in_(['tutorial', 'howto', 'tutorials', 'how_to'])).order_by(
-                desc(func.array_length(TagModel.post, 1))).all()
+            tags = ['tutorial', 'howto', 'tutorials', 'how_to']
         elif mode == 'questions':
-            tg = TagModel.query.filter(TagModel.name.in_(['help', 'question'])).order_by(
-                desc(func.array_length(TagModel.post, 1))).all()
-        
-        tgi = []
-        for t in tg:
-            tgi.extend(t.post)
+            tags = ['help', 'question']
 
-        query = query.filter(PostModel.id.in_(tgi))
-    elif search:
-        query = query.whoosh_search(search)
+        tgs = Post_Tag.get().with_entities(Post_Tag.id).filter(Post_Tag.name.in_(tags)).all()
+        tagsQuery = Post_Tags.get().with_entities(Post_Tags.post).filter(Post_Tags.tag_id.in_(tgs)).all()
+        tagsQuery = list(tuple(tagsQuery))
+        query = query.filter(Post.id.in_(tagsQuery))
     elif user:
         query = query.filter_by(user=user)
     else:
         if kwargs['auth']:
-            if len(currentUser.int_tags) > 0:
-                tg = TagModel.query.filter(TagModel.name.in_(currentUser.int_tags)).order_by(
-                    desc(func.array_length(TagModel.post, 1))).all()
-                tgi = []
-                for t in tg:
-                    tgi.extend(t.post)
-                if len(currentUser.follow) > 0:
-                    query = query.filter(or_(PostModel.id.in_(tgi), PostModel.user.in_(currentUser.follow)))
-                else:
-                    query = query.filter(PostModel.id.in_(tgi))
-            else:
-                if len(currentUser.follow) > 0:
-                    query = query.filter(PostModel.user.in_(currentUser.follow))
-    
-    posts = query.order_by(desc(PostModel.posted_on)).paginate(page=page,per_page=9)
+            if len(currentUser.tags) > 0:
+                user_tags = User_Tags.get().with_entities(User_Tags.tag_id).filter_by(user=currentUser.id).all()
+                tagsQuery = Post_Tags.get().with_entities(Post_Tags.post).filter(Post_Tags.tag_id.in_(user_tags)).all()
+                tagsQuery = list(tuple(tagsQuery))
 
-    tagsQuery = TagModel.query.with_entities(TagModel.name)
+                if len(currentUser.following) > 0:
+                    following = User_Following.get().with_entities(User_Following.followed).filter_by(user=currentUser.id).all()
+                    following = [f[0] for f in following]
+                    query = query.filter(or_(Post.id.in_(tagsQuery), Post.author_id.in_(following)))
+                else:
+                    query = query.filter(Post.id.in_(tagsQuery))
+            else:
+                if len(currentUser.following) > 0:
+                    following = User_Following.get().with_entities(User_Following.followed).filter_by(user=currentUser.id).all()
+                    query = query.filter(Post.author.in_(following))
+    
+    posts = query.order_by(desc(Post.created_on)).paginate(page=page,per_page=9)
+
+    tagsQuery = Post_Tag.get()
 
     if kwargs['auth']:
-        tagsQuery = tagsQuery.filter(~TagModel.name.in_(currentUser.int_tags))
+        user_tags = User_Tags.get().filter_by(user=currentUser.id).all()
+        user_tags = [tag.tag_id for tag in user_tags]
+        tagsQuery = tagsQuery.filter(~Post_Tag.id.in_(user_tags))
+        PostsSchema.context['currentUser'] = currentUser
+        user_tags = User_Tags.get().with_entities(User_Tags.tag_id).filter_by(user=currentUser.id).all()
+        tags_following = Post_Tag.get().filter(Post_Tag.id.in_(user_tags)).all()
 
-    tags = tagsQuery.order_by(desc(func.array_length(TagModel.post, 1))).limit(10).all()
-
-    posts_list = []
-    posts_json = {}
-    for post in posts.items:
-        posts_json['title'] = post.title
-        posts_json['id'] = post.id
-        posts_json['thumbnail'] = post.thumbnail
-        posts_json['posted_on'] = post.time_ago()
-        posts_json['author'] = {
-            'name': post.user_in.name,
-            'avatar': post.user_in.avatar,
-            'real_name': post.user_in.real_name
-        }
-        posts_json['likes'] = post.likes
-        posts_json['read_time'] = post.read_time
-        posts_json['link'] = (str(post.title).replace(' ', '-')).replace('?', '') + '-' + str(post.id)
-        posts_json['tags'] = TagModel.query.with_entities(TagModel.name).filter(TagModel.post.contains([post.id])).all()
-        if kwargs['auth']:
-            if post.id in currentUser.saved_posts:
-                posts_json['saved'] = True
-            else:
-                posts_json['saved'] = False
-
-        posts_list.append(posts_json.copy())
-        posts_json.clear()
-
+    tags = tagsQuery.order_by(desc(Post_Tag.count)).limit(10).all()
 
     if user or page > 1:
         home_json = {
             'posts': {
-                'list': posts_list,
+                'list': PostsSchema.dump(posts.items),
                 'hasnext': True if posts.has_next else False
             }
         }
     else:
         home_json = {
             'posts': {
-                'list': posts_list,
+                'list': PostsSchema.dump(posts.items),
                 'hasnext': True if posts.has_next else False
             },
-            'trending': GetTrending(),
+            'trending': [],
             'utilities': {
-                    'tags': tags,
+                    'tags': PostTagsOnlySchema.dump(tags),
                     'search': search if search else None
                 }
             ,'user': {
-                'flw_tags': currentUser.int_tags if kwargs['auth'] else None
+                'flw_tags': PostTagsOnlySchema.dump(tags_following) if kwargs['auth'] else None
             },
         }
 

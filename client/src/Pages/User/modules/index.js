@@ -1,16 +1,11 @@
-import currentPage from './currentPage.js';
-import { getSettings, setSettings, settings_modified} from './settings.js';
+import currentPage from './currentPage.js'
+import { getSettings, setSettings, settings_modified } from './settings.js'
 
-export {
-    currentPage,
-    getSettings,
-    setSettings,
-    settings_modified
-}
+export { currentPage, getSettings, setSettings, settings_modified }
 
 export default {
-    currentPage,
-    getSettings,
-    setSettings,
-    settings_modified
+	currentPage,
+	getSettings,
+	setSettings,
+	settings_modified,
 }

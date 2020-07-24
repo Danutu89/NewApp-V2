@@ -1,15 +1,14 @@
-import localStorage from './localStorage.js';
+import localStorage from './localStorage.js'
 
 export const user = localStorage('user', {
-                        auth: false,
-                        name: '',
-                        email: '',
-                        avatar: '',
-                        id: '',
-                        real_name: '',
-                        permissions: {},
-                        theme: '',
-                        theme_mode: ''
-                    });
+	auth: false,
+	name: '',
+	email: '',
+	avatar: '',
+	id: '',
+	real_name: '',
+	permissions: {},
+	theme: '',
+})
 
-export default user;
+export default user
