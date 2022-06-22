@@ -55,7 +55,7 @@ maxminddb==1.5.4
 mccabe==0.6.1
 monotonic==1.5
 more-itertools==8.4.0
-numpy==1.19.0
+numpy==1.22.0
 packaging==20.4
 pathlib2==2.3.5
 pbr==3.1.1
